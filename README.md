@@ -1,19 +1,20 @@
 # Sd / Sd++ Programming Language
 
-Welcome to the Sd/Sd++ learning repository. Choose a language for the complete learning guide:
+> **Bắt đầu học ngay · Start learning now**
+>
+> | 🇻🇳 Giáo trình tiếng Việt | 🇬🇧 English textbook |
+> |---|---|
+> | **[📥 Mở / tải PDF tiếng Việt](giaotrinhsd%3Asdpp.pdf?raw=1)** | **[📥 Open / download the English PDF](Sd_Sdpp_Programming_Textbook_English%20(1).pdf?raw=1)** |
+>
+> **[▶ Mở IDE Sd/Sd++](Sd%20IDE.html)** · [Xem ví dụ Sd](examples/sd/) · [Xem ví dụ Sd++](examples/sdpp/)
 
-## 📚 Giáo trình / Textbooks (PDF)
-
-- 🇻🇳 **[Tải giáo trình Sd/Sd++ (PDF, tiếng Việt)](giaotrinhsd%3Asdpp.pdf)**
-- 🇬🇧 **[Download the Sd/Sd++ Programming Textbook (PDF, English)](Sd_Sdpp_Programming_Textbook_English%20(1).pdf)**
-
-## Learn Sd / Học Sd
+Chào mừng bạn đến với repository học Sd/Sd++. Chọn ngôn ngữ để xem hướng dẫn đầy đủ:
 
 - 🇬🇧 **[Learn Sd / Sd++ in English](docs/en/README.md)**
 - 🇻🇳 **[Học Sd / Sd++ bằng tiếng Việt](docs/vi/README.md)**
 
-## Quick start
+## Bắt đầu nhanh
 
-Open [`Sd IDE.html`](Sd%20IDE.html), select **Open file**, and load an example from [`examples/sd/`](examples/sd/) or [`examples/sdpp/`](examples/sdpp/). Select **Run** to execute. The language-specific READMEs provide the learning path, introductory syntax, debugging tips, and reference-material index.
+Mở [`Sd IDE.html`](Sd%20IDE.html), chọn **Mở tệp**, rồi chọn ví dụ trong [`examples/sd/`](examples/sd/) hoặc [`examples/sdpp/`](examples/sdpp/). Nhấn **Chạy** để thực thi. Các hướng dẫn theo ngôn ngữ có lộ trình học, cú pháp nhập môn, mẹo gỡ lỗi và mục lục tài liệu tham khảo.
 
-Sd/Sd++ use project-specific syntax; they are not C/C++. Source examples and reference materials are organized so learners can find, edit, and study them in separate files.
+Sd/Sd++ dùng cú pháp riêng của dự án, không phải C/C++. Mã ví dụ và tài liệu tham khảo được sắp xếp thành các tệp riêng để dễ tìm, chỉnh sửa và học tập.
