@@ -8,6 +8,8 @@ This repository contains projects and learning materials for the Sd and Sd++ pro
 - `sdform.sd` and `shortsd.sd` — example source files.
 - `.tex`, `.txt`, and `.pdf` files — technical and educational materials.
 - `form opencode sd` and `formopen code sd++` — additional language-related project files.
+- [`CODE_GUIDE.en.md`](CODE_GUIDE.en.md) — explanations of the IDE implementation and example code.
+- [Vietnamese code guide](CODE_GUIDE.md) — the original-language version.
 
 ## Purpose
 

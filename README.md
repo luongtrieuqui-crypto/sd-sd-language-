@@ -10,6 +10,8 @@ This repository contains:
 - `sdform.sd` and `shortsd.sd` — example Sd source files.
 - `.tex`, `.txt`, and `.pdf` documents — tutorials, reference notes, and technical materials.
 - Additional project files such as `form opencode sd` and `formopen code sd++`.
+- [`CODE_GUIDE.md`](CODE_GUIDE.md) — a practical guide to the IDE implementation and the example programs.
+- [`CODE_GUIDE.en.md`](CODE_GUIDE.en.md) — the same code guide in English.
 
 ## Project purpose
 
@@ -20,7 +22,7 @@ The repository serves as a learning and testing environment for the Sd and Sd++ 
 1. Open `Sd IDE.html` in a modern browser.
 2. Load or create a `.sd` or `.sdpp` file.
 3. Run or debug the program using the built-in IDE tools.
-4. Use the included examples and documents as references.
+4. Use the included examples and code guide as references.
 
 ## Notes
 

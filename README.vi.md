@@ -10,6 +10,8 @@ Repo bao gồm:
 - `sdform.sd` và `shortsd.sd` — các file ví dụ mã nguồn Sd.
 - Các tài liệu `.tex`, `.txt`, `.pdf` — giáo trình, tài liệu kỹ thuật và tham khảo.
 - Các tệp bổ sung như `form opencode sd` và `formopen code sd++`.
+- [`CODE_GUIDE.md`](CODE_GUIDE.md) — giải thích cách tổ chức IDE và các ví dụ mã nguồn.
+- [Bản hướng dẫn tiếng Anh](CODE_GUIDE.en.md).
 
 ## Mục đích
 
