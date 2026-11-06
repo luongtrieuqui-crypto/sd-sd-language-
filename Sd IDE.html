@@ -1,0 +1,1711 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Sd IDE</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Bố cục: thanh công cụ, thanh tab, soạn thảo | bảng kết quả (xếp dọc khi hẹp), thanh trạng thái */
+:root{
+  --bg:#e7ecef; --panel:#f6f8f9; --edbg:#fbfcfd; --ink:#17212b; --mute:#566573; --line:#cbd5db;
+  --accent:#0a7c72; --accent-ink:#ffffff; --accent-soft:rgba(10,124,114,.12);
+  --err:#b82b2b; --err-bg:rgba(184,43,43,.13); --warn:#8f6200; --ok:#1d7a3a;
+  --sel:rgba(10,124,114,.24); --dbg:rgba(214,160,0,.26); --cur:rgba(10,124,114,.07);
+  --kw:#1f5fb8; --tag:#0a7c72; --ty:#955500; --str:#a1342d; --num:#7640ad; --cmt:#64727e; --ph:#b8480f;
+  --ui:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+  --fs:13px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1015; --panel:#121920; --edbg:#0f151b; --ink:#d5dde4; --mute:#8797a5; --line:#26313b;
+  --accent:#3cc6b6; --accent-ink:#04211e; --accent-soft:rgba(60,198,182,.14);
+  --err:#ff7f77; --err-bg:rgba(255,127,119,.14); --warn:#e5b64a; --ok:#6fd18a;
+  --sel:rgba(60,198,182,.28); --dbg:rgba(229,182,74,.24); --cur:rgba(60,198,182,.07);
+  --kw:#7fadff; --tag:#52d6c6; --ty:#e3b55f; --str:#f29c91; --num:#cca4f7; --cmt:#7b8b98; --ph:#ffab72; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1015; --panel:#121920; --edbg:#0f151b; --ink:#d5dde4; --mute:#8797a5; --line:#26313b;
+  --accent:#3cc6b6; --accent-ink:#04211e; --accent-soft:rgba(60,198,182,.14);
+  --err:#ff7f77; --err-bg:rgba(255,127,119,.14); --warn:#e5b64a; --ok:#6fd18a;
+  --sel:rgba(60,198,182,.28); --dbg:rgba(229,182,74,.24); --cur:rgba(60,198,182,.07);
+  --kw:#7fadff; --tag:#52d6c6; --ty:#e3b55f; --str:#f29c91; --num:#cca4f7; --cmt:#7b8b98; --ph:#ffab72; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--ui);overflow:hidden}
+button,select,input,textarea{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#app{height:100%;display:flex;flex-direction:column;padding-inline:max(0px,env(safe-area-inset-left,0px)) max(0px,env(safe-area-inset-right,0px))}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px max(16px,env(safe-area-inset-left,0px)) 8px max(16px,env(safe-area-inset-left,0px));background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:6px;margin-right:6px}
+.brand b{font:700 19px/1 var(--mono);color:var(--accent);letter-spacing:-.5px}
+.brand span{font:600 12px var(--ui);color:var(--mute);letter-spacing:.14em;text-transform:uppercase}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.btn{height:32px;padding:0 12px;border:1px solid var(--line);background:var(--edbg);border-radius:5px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.run{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:0 16px}
+.btn.run:hover{filter:brightness(1.08)}
+.btn kbd{font:500 11px var(--mono);opacity:.75;margin-left:6px}
+select.btn{padding:0 8px;max-width:190px}
+.sp{flex:1}
+.fz{display:flex}
+.fz .btn{padding:0 9px;border-radius:0}
+.fz .btn:first-child{border-radius:5px 0 0 5px}
+.fz .btn:last-child{border-radius:0 5px 5px 0;border-left:0}
+
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:6px max(16px,env(safe-area-inset-left,0px)) 0;background:var(--bg);overflow-x:auto;scrollbar-width:thin}
+.tab{display:flex;align-items:center;gap:6px;height:32px;padding:0 6px 0 12px;border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;background:var(--panel);color:var(--mute);cursor:pointer;white-space:nowrap;font:500 12.5px var(--mono)}
+.tab.on{background:var(--edbg);color:var(--ink);box-shadow:inset 0 2px 0 var(--accent)}
+.tab input{width:12ch;border:0;background:transparent;font:inherit;outline:1px solid var(--accent);padding:0 2px}
+.tab .x{border:0;background:transparent;width:20px;height:20px;border-radius:3px;cursor:pointer;color:var(--mute);line-height:1;font-size:15px}
+.tab .x:hover{background:var(--err-bg);color:var(--err)}
+.tab .x.arm{background:var(--err);color:#fff;width:auto;padding:0 6px;font:600 11px var(--ui)}
+.tab.add{padding:0 12px;color:var(--accent);font-size:16px}
+
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);border-top:1px solid var(--line)}
+@media (max-width:900px){.work{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1.25fr) minmax(0,1fr)}}
+.ed{display:flex;min-width:0;min-height:0;background:var(--edbg);position:relative;overflow:hidden;border-right:1px solid var(--line)}
+@media (max-width:900px){.ed{border-right:0;border-bottom:1px solid var(--line)}}
+.gut{flex:none;width:3.6em;overflow:hidden;background:var(--panel);border-right:1px solid var(--line);font:var(--fs)/var(--lh) var(--mono);color:var(--mute);text-align:right;user-select:none;--lh:calc(var(--fs)*1.65)}
+.gut .gi{padding:10px 8px 40px 0;will-change:transform}
+.gut div{height:var(--lh);cursor:pointer;padding-right:2px}
+.gut div.er{color:var(--err);font-weight:700;background:var(--err-bg)}
+.gut div.cu{color:var(--ink)}
+.surface{position:relative;flex:1;min-width:0;--lh:calc(var(--fs)*1.65)}
+.hl,#code{position:absolute;inset:0;margin:0;padding:10px 14px 40px 12px;font:var(--fs)/var(--lh) var(--mono);tab-size:4;white-space:pre;letter-spacing:0;word-spacing:0}
+.hl{overflow:hidden;pointer-events:none}
+.hl .hi{width:max-content;min-width:100%;will-change:transform}
+.hl .l{min-height:var(--lh)}
+.hl .l.er{background:var(--err-bg);box-shadow:inset 3px 0 0 var(--err)}
+.hl .l.cu{background:var(--cur)}
+#code{width:100%;height:100%;resize:none;border:0;background:transparent;color:transparent;caret-color:var(--ink);overflow:auto;outline:0}
+#code::selection{background:var(--sel);color:transparent}
+.hl .l.dbg{background:var(--dbg);box-shadow:inset 3px 0 0 var(--warn)}
+.gut div.bp{background:radial-gradient(circle at 9px 50%,var(--err) 4px,transparent 5px)}
+.gut div.dbg{color:var(--warn);font-weight:700}
+.dbar{display:flex;flex-wrap:wrap;gap:6px;padding:6px max(16px,env(safe-area-inset-left,0px));background:var(--dbg);border-bottom:1px solid var(--line);align-items:center}
+.dbar .lbl{font:600 12px var(--ui);color:var(--warn);margin-right:4px;letter-spacing:.06em;text-transform:uppercase}
+#inrow{display:flex;gap:6px;margin-top:10px}
+#inrow[hidden]{display:none}
+#inrow input{flex:1;min-width:0;height:32px;padding:0 10px;border:1px solid var(--accent);border-radius:5px;background:var(--edbg);font:var(--fs) var(--mono)}
+.vt{width:100%;border-collapse:collapse;font:12.5px var(--mono)}
+.vt th{text-align:left;font:600 11px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:4px 8px;border-bottom:1px solid var(--line)}
+.vt td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+.vt td:first-child{color:var(--tag);font-weight:500}.vt td:nth-child(2){color:var(--mute)}
+.stk{margin:0 0 12px;padding:0;list-style:none;font:12.5px var(--mono)}
+.stk li{padding:3px 8px;border-left:2px solid var(--line)}
+.stk li:last-child{border-left-color:var(--warn);font-weight:600}
+.fl{color:var(--ph);font-weight:700}
+.bd.w{background:var(--warn)}
+.wrn{margin-top:10px;display:flex;flex-direction:column;gap:4px;font:12.5px var(--mono);color:var(--warn)}
+.wrn button{border:0;background:transparent;text-align:left;color:inherit;cursor:pointer;padding:2px 0}
+.k{color:var(--kw);font-weight:500}.t{color:var(--tag)}.y{color:var(--ty)}.s{color:var(--str)}.n{color:var(--num)}.c{color:var(--cmt);font-style:italic}.p{color:var(--ph);font-weight:700}.o{color:var(--kw)}
+
+.panel{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--panel)}
+.ptabs{display:flex;gap:2px;padding:0 10px;border-bottom:1px solid var(--line);overflow-x:auto;flex:none}
+.pt{height:34px;padding:0 12px;border:0;background:transparent;color:var(--mute);cursor:pointer;font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+.pt.on{color:var(--ink);border-bottom-color:var(--accent)}
+.pt .bd{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:9px;background:var(--err);color:#fff;font:600 11px/18px var(--ui);text-align:center}
+.pt .bd.ok{background:var(--ok)}
+.pane{flex:1;min-height:0;overflow:auto;padding:12px max(16px,env(safe-area-inset-right,0px)) 16px 14px}
+.pane[hidden]{display:none!important}
+#out{margin:0;font:var(--fs)/1.6 var(--mono);white-space:pre-wrap;word-break:break-word}
+.res{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px;font:500 12px var(--mono);color:var(--mute)}
+.res .ok{color:var(--ok)}.res .bad{color:var(--err)}
+.flt{display:block;width:100%;text-align:left;margin-top:10px;padding:10px 12px;border:1px solid var(--err);background:var(--err-bg);border-radius:5px;cursor:pointer;color:var(--ink)}
+.flt b{color:var(--err);font-family:var(--mono)}
+.empty{color:var(--mute)}
+#stdin{width:100%;height:100%;min-height:120px;resize:none;border:1px solid var(--line);border-radius:5px;background:var(--edbg);padding:10px;font:var(--fs)/1.6 var(--mono);white-space:pre}
+.hint{margin:0 0 8px;color:var(--mute);font-size:12.5px}
+.prob{display:flex;gap:10px;width:100%;text-align:left;padding:8px 10px;border:1px solid var(--line);border-radius:5px;background:var(--edbg);margin-bottom:6px;cursor:pointer}
+.prob:hover{border-color:var(--accent)}
+.prob .cd{font:600 12px var(--mono);color:var(--err);flex:none}
+.prob.w .cd{color:var(--warn)}
+.prob .ln{font:500 12px var(--mono);color:var(--mute);flex:none}
+.ref{margin:0 0 14px}
+.ref h4{margin:0 0 4px;font:600 12px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.ref pre{margin:0;padding:8px 10px;background:var(--edbg);border:1px solid var(--line);border-radius:5px;font:12px/1.55 var(--mono);overflow-x:auto}
+
+.status{display:flex;flex-wrap:wrap;gap:2px 16px;padding:4px max(16px,env(safe-area-inset-left,0px)) calc(4px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-ink);font:500 11.5px var(--mono)}
+.status .g{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(40px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:7px 14px;border-radius:5px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+@media (max-width:560px){.brand span,.fz,.sp,.btn kbd{display:none}.top{gap:6px}.tools{flex-wrap:nowrap;overflow-x:auto;flex:1 1 100%;padding-bottom:2px}.tools .btn{flex:none}}
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="brand"><b>Sd</b><span>IDE</span></div>
+    <div class="tools">
+      <button class="btn run" id="run" title="Chạy chương trình (Ctrl+Enter)">▶ Chạy<kbd>Ctrl+⏎</kbd></button>
+      <button class="btn" id="dbg" title="Gỡ lỗi từng bước (F9). Bấm số dòng để đặt điểm dừng">Gỡ lỗi<kbd>F9</kbd></button>
+      <select class="btn" id="ex" aria-label="Ví dụ trong giáo trình"></select>
+      <select class="btn" id="snip" aria-label="Chèn mẫu lệnh"></select>
+      <button class="btn" id="fmt" title="Căn lề lại toàn bộ tệp (Ctrl+Shift+F)">Căn lề</button>
+      <button class="btn" id="setmain" title="Đặt tệp đang mở làm tệp chính: Chạy và Gỡ lỗi luôn chạy tệp này">★ Tệp chính</button>
+      <button class="btn" id="open" title="Mở tệp (Ctrl+O)">Mở tệp</button>
+      <button class="btn" id="opendir" title="Mở cả thư mục dự án (Chrome, Edge)">Mở thư mục</button>
+      <button class="btn" id="save" title="Lưu tệp (Ctrl+S)">Lưu</button>
+      <button class="btn" id="saveas" title="Lưu thành tệp mới">Lưu thành…</button>
+      <button class="btn" id="copy">Sao chép</button>
+      <input type="file" id="file" multiple accept=".sd,.sdpp,.txt,text/plain" hidden>
+    </div>
+    <div class="sp"></div>
+    <div class="fz" role="group" aria-label="Cỡ chữ"><button class="btn" id="fm" aria-label="Giảm cỡ chữ">A−</button><button class="btn" id="fp" aria-label="Tăng cỡ chữ">A+</button></div>
+  </header>
+  <div class="dbar" id="dbar" hidden>
+    <span class="lbl" id="dlbl">Đang gỡ lỗi</span>
+    <button class="btn" data-d="go" title="Chạy tới điểm dừng kế tiếp (F5)">Tiếp tục<kbd>F5</kbd></button>
+    <button class="btn" data-d="over" title="Bước qua (F10)">Bước qua<kbd>F10</kbd></button>
+    <button class="btn" data-d="in" title="Bước vào hàm (F11)">Bước vào<kbd>F11</kbd></button>
+    <button class="btn" data-d="out" title="Ra khỏi hàm (Shift+F11)">Ra khỏi hàm<kbd>⇧F11</kbd></button>
+    <button class="btn" data-d="stop" title="Dừng gỡ lỗi (Shift+F5)">Dừng<kbd>⇧F5</kbd></button>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Tệp đang mở"></nav>
+  <main class="work">
+    <section class="ed" aria-label="Soạn thảo">
+      <div class="gut" id="gut"><div class="gi" id="gi"></div></div>
+      <div class="surface">
+        <div class="hl" id="hl" aria-hidden="true"><div class="hi" id="hi"></div></div>
+        <textarea id="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Mã nguồn Sd"></textarea>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="ptabs" role="tablist">
+        <button class="pt on" role="tab" data-p="out">Đầu ra</button>
+        <button class="pt" role="tab" data-p="vr">Biến</button>
+        <button class="pt" role="tab" data-p="in">Nhập liệu</button>
+        <button class="pt" role="tab" data-p="pr">Vấn đề<span class="bd ok" id="bd">0</span></button>
+        <button class="pt" role="tab" data-p="rf">Tra cứu</button>
+      </div>
+      <div class="pane" id="p-out"><div class="res" id="res"></div><pre id="out"></pre><div id="flt"></div><div class="wrn" id="wrn"></div><form id="inrow" hidden><input id="inbox" autocomplete="off" aria-label="Nhập một dòng dữ liệu" placeholder="Chương trình đang chờ dữ liệu, gõ rồi nhấn Enter"><button class="btn run" type="submit">Gửi</button></form></div>
+      <div class="pane" id="p-vr" hidden><p class="empty">Bấm Gỡ lỗi để chạy từng bước. Biến và ngăn xếp gọi hàm hiện ở đây.</p></div>
+      <div class="pane" id="p-in" hidden>
+        <p class="hint" id="inhint">Mỗi lệnh <code>ipt</code> đọc một dòng từ ô này. Hết dòng điền sẵn, chương trình dừng và hỏi bạn ngay ở tab Đầu ra.</p>
+        <textarea id="stdin" spellcheck="false" aria-label="Dữ liệu nhập"></textarea>
+      </div>
+      <div class="pane" id="p-pr" hidden></div>
+      <div class="pane" id="p-rf" hidden></div>
+    </section>
+  </main>
+  <footer class="status"><span id="st-pos">Dòng 1, cột 1</span><span id="st-lang">Sd 2</span><span id="st-pr">0 vấn đề</span><span class="g"></span><span id="st-run">Chưa chạy</span></footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* Thong dich Sd 2 (Phan I) - cong tu sdi.py */
+class SdFault extends Error {
+  constructor(code, msg, line) { super(msg); this.code = code; this.msg = msg; this.line = line; this.file = null; }
+}
+class Brk {} class Nxt {}
+class Ret { constructor(v) { this.v = v; } }
+class NeedInput {}
+function splitIn(t){ if(!t) return []; const a=t.split('\n'); if(a.length&&a[a.length-1]==='') a.pop(); return a; }
+class SbBack {} class SbExit {}
+class NullPtr {} const NULLP = new NullPtr();
+class VarPtr { constructor(scope, name) { this.scope = scope; this.name = name; } }
+class ElemPtr { constructor(arr, idx, blk) { this.arr = arr; this.idx = idx; this.blk = blk; } }
+class FldPtr { constructor(obj, name) { this.obj = obj; this.name = name; } }
+const isPtr = (x) => x instanceof VarPtr || x instanceof ElemPtr || x instanceof FldPtr || x instanceof NullPtr;
+const PARSE_WARN = [];
+const STDLIBS = new Set(['ioprt', 'math', 'mem', 'str', 'sys', 'file', 'draw']);
+class Fl { constructor(v) { this.v = v; } }
+class Struct { constructor(f) { this.f = f; } }
+const nv = (x) => (x instanceof Fl ? x.v : typeof x === 'boolean' ? (x ? 1 : 0) : x);
+const isNum = (x) => typeof x === 'number' || x instanceof Fl || typeof x === 'boolean';
+const truthy = (v) => (v instanceof Fl ? v.v !== 0 : v instanceof NullPtr ? false : Array.isArray(v) ? v.length > 0 : !!v);
+const TYPES = new Set(['int', 'float', 'str', 'bool', 'ptr']);
+const MAXSAFE = 9007199254740991;
+const STEP_LIMIT = 4000000, OUT_LIMIT = 400000, DEPTH_LIMIT = 800;
+
+function stripComments(src) {
+  const out = []; let inb = false, openl = 0;
+  src.split('\n').forEach((line, idx) => {
+    const n = idx + 1; let res = '', pos = 0;
+    while (pos < line.length) {
+      const j = line.indexOf('\\\\', pos);
+      if (inb) { if (j < 0) pos = line.length; else { pos = j + 2; inb = false; } }
+      else if (j < 0) { res += line.slice(pos); pos = line.length; }
+      else { res += line.slice(pos, j); pos = j + 2; inb = true; openl = n; }
+    }
+    out.push([n, res.trim()]);
+  });
+  if (inb) throw new SdFault('E101', `ghi chú mở ở dòng ${openl} không được đóng`, openl);
+  return out.filter(([, s]) => s);
+}
+
+const TOK = /\s*(\d+\.\d+|\d+|"[^"]*"|[A-Za-z_]\w*|==|!=|<=|>=|\+\+|--|[-+*/%()<>=\[\].'@,])/y;
+function tokenize(s, line) {
+  const toks = []; s = s.trim(); let pos = 0;
+  while (pos < s.length) {
+    TOK.lastIndex = pos; const m = TOK.exec(s);
+    if (!m) throw new SdFault('E102', `ký tự lạ: ${s.slice(pos, pos + 8)}`, line);
+    toks.push(m[1]); pos = TOK.lastIndex;
+    while (pos < s.length && /\s/.test(s[pos])) pos++;
+  }
+  return toks;
+}
+
+const BIN = [['or'], ['and'], ['==', '!='], ['<', '<=', '>', '>='], ['+', '-'], ['*', '/', '%']];
+class P {
+  constructor(t, line) { this.t = t; this.i = 0; this.line = line; }
+  peek() { return this.i < this.t.length ? this.t[this.i] : null; }
+  nxt() { const v = this.peek(); this.i++; return v; }
+  eat(v) {
+    if (this.peek() !== v) throw new SdFault('E201', `mong đợi '${v}', gặp '${this.peek() === null ? 'hết dòng' : this.peek()}'`, this.line);
+    this.i++;
+  }
+  expr(lvl = 0) {
+    if (lvl === BIN.length) return this.unary();
+    let l = this.expr(lvl + 1);
+    while (this.peek() !== null && BIN[lvl].includes(this.peek())) { const op = this.nxt(); l = ['bin', op, l, this.expr(lvl + 1)]; }
+    return l;
+  }
+  unary() {
+    if (this.peek() === 'not') { this.nxt(); return ['not', this.unary()]; }
+    if (this.peek() === '-') { this.nxt(); return ['neg', this.unary()]; }
+    if (this.peek() === '*') { this.nxt(); return ['deref', this.unary()]; }
+    if (this.peek() === '@') { this.nxt(); return ['addr', this.unary()]; }
+    return this.postfix();
+  }
+  sep() {
+    if (this.peek() === "'") this.nxt();
+    else if (this.peek() === ',') { this.nxt(); PARSE_WARN.push({ code: 'W202', line: this.line, msg: "dấu ',' ngăn phần tử là dạng cũ, hãy dùng dấu '" }); }
+  }
+  args() {
+    const a = []; this.eat('(');
+    while (this.peek() !== ')') {
+      if (this.peek() === null) throw new SdFault('E201', "thiếu ')'", this.line);
+      a.push(this.expr()); this.sep();
+    }
+    this.eat(')'); return a;
+  }
+  postfix() {
+    const t = this.nxt(); let e;
+    if (t === null) throw new SdFault('E201', 'biểu thức bị thiếu', this.line);
+    if (t === '(') { e = this.expr(); this.eat(')'); }
+    else if (t === '[') {
+      const items = [];
+      while (this.peek() !== ']') {
+        if (this.peek() === null) throw new SdFault('E201', "thiếu ']'", this.line);
+        items.push(this.expr()); this.sep();
+      }
+      this.eat(']'); e = ['list', items];
+    }
+    else if (/^\d+$/.test(t)) e = ['num', parseInt(t, 10)];
+    else if (/^\d+\.\d+$/.test(t)) e = ['num', new Fl(parseFloat(t))];
+    else if (t[0] === '"') e = ['str', t.slice(1, -1)];
+    else if (t === 'true' || t === 'false') e = ['num', t === 'true'];
+    else if (!/^[A-Za-z_]/.test(t)) throw new SdFault('E201', `không mong đợi '${t}'`, this.line);
+    else if (t === 'ids' && this.peek() === '(') {
+      this.nxt(); const nm = this.nxt(); this.eat(')'); this.eat('.'); this.eat('g'); e = ['gvar', nm];
+    }
+    else {
+      e = ['var', t];
+      if (['str', 'math', 'file', 'sys', 'mem', 'sta', 'draw'].includes(t) && this.peek() === '.') {
+        this.nxt(); const f = this.nxt(); e = ['call', `${t}.${f}`, this.args()];
+      } else if (this.peek() === '(') e = ['call', t, this.args()];
+    }
+    for (;;) {
+      if (this.peek() === '[') { this.nxt(); const i = this.expr(); this.eat(']'); e = ['idx', e, i]; }
+      else if (this.peek() === '.') { this.nxt(); e = ['fld', e, this.nxt()]; }
+      else break;
+    }
+    return e;
+  }
+}
+function parseExpr(s, line) {
+  const p = new P(tokenize(s, line), line); const e = p.expr();
+  if (p.peek() !== null) throw new SdFault('E201', `thừa '${p.peek()}'`, line);
+  return e;
+}
+function inner(s, start, line) {
+  if (s[start] !== '(') throw new SdFault('E201', "mong đợi '('", line);
+  let d = 0;
+  for (let k = start; k < s.length; k++) {
+    if (s[k] === '(') d++;
+    else if (s[k] === ')') { d--; if (d === 0) return [s.slice(start + 1, k), k + 1]; }
+  }
+  throw new SdFault('E201', "thiếu ')'", line);
+}
+function splitTop(s, sep = "'") {
+  const parts = []; let d = 0, cur = '', q = false;
+  for (const ch of s) {
+    if (ch === '"') q = !q;
+    if (!q) { if ('([{'.includes(ch)) d++; else if (')]}'.includes(ch)) d--; }
+    if (ch === sep && d === 0 && !q) { parts.push(cur); cur = ''; } else cur += ch;
+  }
+  parts.push(cur);
+  return parts.map((p) => p.trim()).filter((p) => p);
+}
+function findAssign(s) {
+  for (let k = 0; k < s.length; k++) {
+    if (s[k] !== '=') continue;
+    if (k > 0 && '=!<>'.includes(s[k - 1])) continue;
+    if (s[k + 1] === '=') continue;
+    return k;
+  }
+  return -1;
+}
+
+class Prog {
+  constructor(src, ctx) {
+    this.ctx = ctx || { stack: [], done: new Set(), load: null };
+    this.lines = stripComments(src);
+    this.fns = new Map(); this.structs = new Map(); this.main = null; this.i = 0;
+    this.globalInit = []; this.alias = Object.create(null); this.warnings = []; this.isPP = false;
+    try { this.top(); }
+    catch (e) {
+      if (e instanceof SdFault) throw e;
+      const k = Math.min(this.i, this.lines.length - 1);
+      throw new SdFault('E202', 'cú pháp không hợp lệ', k >= 0 ? this.lines[k][0] : 0);
+    }
+  }
+  cur() {
+    if (this.i >= this.lines.length) {
+      const last = this.lines.length ? this.lines[this.lines.length - 1][0] : 0;
+      throw new SdFault('E201', 'hết tệp nhưng còn khối chưa đóng', last);
+    }
+    return this.lines[this.i];
+  }
+  top() {
+    const L = this.lines;
+    while (this.i < L.length) {
+      const [n, s] = L[this.i];
+      if (s.startsWith('imp*')) this.doImport(n, s);
+      else if (s === 'sta(main){') { this.i++; this.main = this.body()[0]; }
+      else if (s === 'iid: sta(struct) => dta:') {
+        const s2 = this.lines[this.i + 1][1];
+        const m = /^sta (\w+) \{ (.*) \}$/.exec(s2);
+        const fields = splitTop(m[2]).map((f) => { const [t, nm] = f.split(/\s+/); return [t, nm]; });
+        this.structs.set(m[1], fields); this.i += 2; this.closer('strt ed');
+      }
+      else if (s === 'iid: sta(fn) => rtn:' || s === 'iid: sta(void) => unkw:') {
+        const kind = s.includes('fn') ? 'fn' : 'void';
+        const n2 = this.lines[this.i + 1][0], s2 = this.lines[this.i + 1][1];
+        const m = /^sta (\w+)\((.*?)\)( -> \w+)? \{$/.exec(s2);
+        const params = splitTop(m[2]).map((p) => { const mm = /^(\w+) (\w+)(\[\d+\])?$/.exec(p); return [mm[1], mm[2]]; });
+        this.i += 2;
+        const body = this.body()[0];
+        this.closer(kind + ' ed');
+        this.fns.set(m[1], { params, body, line: n2 });
+      }
+      else if (!this.topItem(n, s)) throw new SdFault('E202', `không nhận dạng được: ${s}`, n);
+    }
+  }
+  doImport(n, s) {
+    const m = /^imp\*(\w+)\.(?:ed|\$)$/.exec(s);
+    if (!m) throw new SdFault('E202', "imp* cần dạng 'imp*tên.ed' (hoặc 'imp*tên.$' trong Sd++)", n);
+    const name = m[1]; this.i++;
+    if (STDLIBS.has(name)) return;
+    const ctx = this.ctx;
+    const key = name.toLowerCase();
+    if (ctx.stack.includes(key)) throw new SdFault('E211', `nhập vòng tròn: ${ctx.stack.concat([key]).join(' -> ')}`, n);
+    if (ctx.done.has(key)) return;
+    const src = ctx.load ? ctx.load(name) : null;
+    if (src === null || src === undefined) throw new SdFault('E205', `không tìm thấy thư viện hoặc tệp '${name}' (thư viện chuẩn: ${[...STDLIBS].join(', ')})`, n);
+    ctx.done.add(key);
+    let sub;
+    try { sub = buildProg(src, { load: ctx.load, stack: ctx.stack.concat([key]), done: ctx.done }); }
+    catch (e) { if (e instanceof SdFault && !e.file) e.file = key; throw e; }
+    for (const [k, v] of sub.fns) {
+      if (this.fns.has(k)) throw new SdFault('E302', `trùng tên hàm '${k}' (từ tệp '${name}')`, n);
+      if (!v.file) v.file = key; this.fns.set(k, v);
+    }
+    for (const [k, v] of sub.structs) {
+      if (this.structs.has(k)) throw new SdFault('E302', `trùng tên cấu trúc '${k}' (từ tệp '${name}')`, n);
+      this.structs.set(k, v);
+    }
+    this.globalInit.push(...sub.globalInit);
+    for (const w of sub.warnings) this.warnings.push(Object.assign({ file: key }, w));
+  }
+  topItem() { return false; }
+  isClose(s) { return s === '}'; }
+  closer(want) {
+    const [n, s] = this.cur();
+    if (s !== want) throw new SdFault('E202', `mong đợi '${want}', gặp '${s}'`, n);
+    this.i++;
+  }
+  body() {
+    const stmts = [];
+    for (;;) {
+      const [n, s] = this.cur();
+      if (this.isClose(s)) { this.i++; return [stmts, n]; }
+      stmts.push(this.stmt());
+    }
+  }
+  stmt() {
+    const [n, s] = this.cur();
+    if (s === 'iid: sta(bolean) => cdn,tf:') {
+      this.i++; const br = [];
+      while (this.cur()[1] !== 'bln ed') {
+        const [nb, sb] = this.cur();
+        const m = /^sta\((.*)\) \{$/.exec(sb);
+        if (!m) throw new SdFault('E202', `mong đợi nhánh 'sta(điều kiện) {' hoặc 'bln ed', gặp '${sb}'`, nb);
+        this.i++;
+        const cond = m[1] === 'else' ? null : parseExpr(m[1], nb);
+        br.push([cond, this.body()[0]]);
+      }
+      this.i++;
+      return ['if', n, br];
+    }
+    if (s === 'iid: sta(for) => cdn,chck:' || s === 'iid: sta(while) => cdn,edt:') {
+      const kind = s.includes('for') ? 'for' : 'while';
+      this.i++;
+      const [n2, s2] = this.cur();
+      const m = /^dbl sta\((.*)\) \{$/.exec(s2);
+      if (!m) throw new SdFault('E202', `mong đợi 'dbl sta(...) {', gặp '${s2}'`, n2);
+      this.i++;
+      const body = this.body()[0]; this.closer('dbl ed');
+      if (kind === 'while') return ['while', n, parseExpr(m[1], n2), body];
+      const parts = splitTop(m[1]);
+      if (parts.length !== 3) throw new SdFault('E201', "vòng for cần 3 phần cách nhau bởi dấu '", n2);
+      return ['for', n, this.simple('sta(' + parts[0] + ')', n2), parseExpr(parts[1], n2), this.simple('sta(' + parts[2] + ')', n2), body];
+    }
+    if (!s.startsWith('iid:')) throw new SdFault('E202', `không nhận dạng được: ${s}`, n);
+    this.i++;
+    if (!s.endsWith(' ed')) throw new SdFault('E201', "thiếu chốt 'ed' ở cuối lệnh", n);
+    return this.simple(s.slice(5, -3).trim(), n);
+  }
+  simple(t, n) {
+    if (t.startsWith('ref*')) return ['ret', n, parseExpr(t.slice(4), n)];
+    if (t === 'brk') return ['brk', n];
+    if (t === 'nxt') return ['nxt', n];
+    if (t.startsWith('call ')) return ['expr', n, parseExpr(t.slice(5), n)];
+    if (!t.startsWith('sta(')) throw new SdFault('E202', `lệnh lạ: ${t}`, n);
+    const [head, nx] = inner(t, 3, n);
+    const rest = t.slice(nx).trim();
+    if (head === 'pri') return ['pri', n, rest.slice(2).trim()];
+    if (head === 'ipt') {
+      const at = rest.indexOf('sta(');
+      if (at < 0) throw new SdFault('E201', "ipt cần '=> edt: sta(biến)'", n);
+      return ['ipt', n, parseExpr(inner(rest, at + 3, n)[0], n)];
+    }
+    let mi = /^(\w+) (\w+)\s*=\s*(.+)$/.exec(head);
+    if (mi && (TYPES.has(mi[1]) || this.structs.has(mi[1]))) return ['decl', n, mi[1], mi[2], null, parseExpr(mi[3], n)];
+    const m = /^(\w+) (\w+)(?:\[(\d+)\])?$/.exec(head);
+    if (m && (TYPES.has(m[1]) || this.structs.has(m[1]))) {
+      let init = null;
+      if (rest) {
+        const at = rest.indexOf('sta(');
+        if (at < 0) throw new SdFault('E201', "khai báo cần '=> edt: sta(tên = giá trị)'", n);
+        const body = inner(rest, at + 3, n)[0]; const k = findAssign(body);
+        if (k < 0) throw new SdFault('E201', "thiếu dấu '=' trong phép gán", n);
+        init = parseExpr(body.slice(k + 1), n);
+      }
+      return ['decl', n, m[1], m[2], m[3] ? parseInt(m[3], 10) : null, init];
+    }
+    if (head.endsWith('++') || head.endsWith('--')) {
+      const lhs = parseExpr(head.slice(0, -2), n);
+      return ['assign', n, lhs, ['bin', head.slice(-1), lhs, ['num', 1]]];
+    }
+    const k = findAssign(head);
+    if (k < 0) throw new SdFault('E202', `lệnh lạ: ${t}`, n);
+    return ['assign', n, parseExpr(head.slice(0, k), n), parseExpr(head.slice(k + 1), n)];
+  }
+}
+
+
+function preprocessPP(src) {
+  let inB = false;
+  const L = src.split('\n').map((line) => {
+    let out = '', inS = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (!inS && c === '\\' && line[i + 1] === '\\') { inB = !inB; out += '\\\\'; i++; continue; }
+      if (inB) { out += c; continue; }
+      if (c === '"') inS = !inS;
+      if (!inS && c === '*' && line[i + 1] === '/') break;
+      out += c;
+    }
+    return out;
+  });
+  const flags = [], R = [];
+  const RES = ['$', '₫', '€', '$$', '#', '##'];
+  for (let i = 0; i < L.length; i++) {
+    const t = L[i].trim();
+    const m = /^defk\s*<\s*ids\.end:\s*text\s*"([^"]+)"\s*>\s*\{/.exec(t);
+    if (!m) { R.push(L[i]); continue; }
+    const ch = m[1];
+    if (RES.includes(ch) || flags.includes(ch)) throw new SdFault('E209', `không được định nghĩa lại cờ '${ch}' (dành riêng hoặc đã niêm phong)`, i + 1);
+    let j = i + 1, sealed = false, closed = false;
+    for (; j < L.length; j++) {
+      const u = L[j].replace(/\\\\.*?\\\\/g, '').trim();
+      if (/#$/.test(u) && !/##$/.test(u)) sealed = true;
+      if (/^\}/.test(u)) { closed = true; break; }
+    }
+    if (!closed || !sealed) throw new SdFault('E210', "khối defk phải kết thúc bằng '#' trước dấu '}'", i + 1);
+    flags.push(ch);
+    for (let k = i; k <= j; k++) R.push('');
+    i = j;
+  }
+  if (!flags.length) return R.join('\n');
+  return R.map((line) => {
+    let out = '', inS = false;
+    for (const c of line) {
+      if (c === '"') inS = !inS;
+      out += (!inS && flags.includes(c)) ? '$' : c;
+    }
+    return out;
+  }).join('\n');
+}
+
+class PProg extends Prog {
+  isClose(s) { return /^\}\s*[$€]?$/.test(s); }
+  warn(code, msg, line) { this.warnings.push({ code, msg, line }); }
+  top() {
+    this.alias = Object.create(null); this.isPP = true;
+    const L = this.lines;
+    if (!L.length || L[L.length - 1][1] !== '##') throw new SdFault('E208', "tệp Sd++ phải kết thúc bằng '##'", L.length ? L[L.length - 1][0] : 1);
+    L.pop();
+    super.top();
+  }
+  topItem(n, s) {
+    const L = this.lines;
+    if (/^ssta\s*\{$/.test(s)) { this.i++; return true; }
+    if (s === '}') { this.i++; return true; }
+    const m = /^(ids|sta\.arr|ptr)\.g:\s*(\w+)\s*=\s*(.+?)\s*₫$/.exec(s);
+    if (m) { this.globalInit.push([m[2], parseExpr(m[3], n), n]); this.i++; return true; }
+    if (/^(ids|sta\.arr|ptr)\.g:/.test(s)) throw new SdFault('E201', "khai báo toàn cục cần dạng 'ids.g: tên = giá-trị ₫'", n);
+    if (/^define\s*\[/.test(s)) {
+      let acc = s.slice(s.indexOf('[') + 1), k = this.i;
+      while (!acc.includes(']{')) { k++; if (k >= L.length) throw new SdFault('E201', "thiếu ']{' đóng danh sách define", n); acc += ' ' + L[k][1]; }
+      const at = acc.indexOf(']{');
+      let mainName = 'main';
+      for (const d of splitTop(acc.slice(0, at), ',')) {
+        const md = /^(\w+)\.edt:\s*text\s*=\s*"([^"]*)"$/.exec(d);
+        if (!md) throw new SdFault('E202', `định nghĩa không hợp lệ: ${d}`, n);
+        if (md[1] === 'ids') mainName = md[2]; else this.alias[md[2]] = md[1];
+      }
+      this.i = k + 1;
+      const [n2, s2] = this.cur();
+      if (s2 !== mainName + ': {' && s2 !== mainName + ':{') throw new SdFault('E202', `mong đợi '${mainName}: {', gặp '${s2}'`, n2);
+      this.i++; this.main = this.body()[0];
+      const [n3, s3] = this.cur();
+      if (!/^\}\s*€$/.test(s3)) throw new SdFault('E202', `mong đợi '} €' đóng khung define, gặp '${s3}'`, n3);
+      this.i++; return true;
+    }
+    return false;
+  }
+  modifies(x, v) {
+    if (!Array.isArray(x)) return false;
+    if (x[0] === 'assign' && typeof x[1] === 'number' && Array.isArray(x[2]) && ((x[2][0] === 'var' && x[2][1] === v) || x[2][0] === 'deref')) return true;
+    if (x[0] === 'ipt' && x[2] && x[2][0] === 'var' && x[2][1] === v) return true;
+    return x.some((c) => this.modifies(c, v));
+  }
+  stmt() {
+    const [n, s0] = this.cur();
+    if (s0.startsWith('iid:')) return super.stmt();
+    this.i++;
+    if (s0 === '$$') return ['sbback', n];
+    if (/^transf\s*\$(\s*\$)?$/.test(s0)) {
+      if (/\$\s*\$$/.test(s0)) this.warn('W202', "dạng 'transf $ $' là cũ, hãy viết 'transf $'", n);
+      return ['sbexit', n, 'transf'];
+    }
+    if (/^break\s*\$+$/.test(s0)) {
+      if (/\$\$$/.test(s0)) this.warn('W202', "dạng 'break $$' là cũ, hãy viết 'break $'", n);
+      return ['sbexit', n, 'break'];
+    }
+    if (/^init\b/.test(s0)) return ['nop', n];
+    const mh = /^ids sb\((\w+)\)\s*\{$/.exec(s0);
+    if (mh) return this.sbBlock(n, mh[1]);
+    let s = s0;
+    if (s.endsWith('$:')) s = s.slice(0, -2).trim();
+    else if (s.endsWith('$')) s = s.slice(0, -1).trim();
+    else throw new SdFault('E201', "thiếu cờ chốt '$' ở cuối lệnh", n);
+    if (s.startsWith('ref*')) return ['ret', n, parseExpr(s.slice(4), n)];
+    let m = /^(ids\.pri|(\w+)):\s*(.+)$/.exec(s);
+    if (m && (m[1] === 'ids.pri' || this.alias[m[2]] === 'pri')) return ['pri', n, m[3].trim()];
+    m = /^iptedt\.(\w+)\s+(\w+)\s*(?:=\s*(.+))?$/.exec(s);
+    if (m) {
+      if (!TYPES.has(m[1]) && !this.structs.has(m[1])) throw new SdFault('E301', `kiểu '${m[1]}' không tồn tại`, n);
+      return ['decl', n, m[1], m[2], null, m[3] ? parseExpr(m[3], n) : null];
+    }
+    if (s.endsWith('++') || s.endsWith('--')) { const lhs = parseExpr(s.slice(0, -2), n); return ['assign', n, lhs, ['bin', s.slice(-1), lhs, ['num', 1]]]; }
+    const k = findAssign(s);
+    if (k >= 0) return ['assign', n, parseExpr(s.slice(0, k), n), parseExpr(s.slice(k + 1), n)];
+    return ['expr', n, parseExpr(s, n)];
+  }
+  sbBlock(n, v) {
+    const branches = [];
+    for (;;) {
+      const [n2, s2] = this.cur();
+      if (this.isClose(s2)) { this.i++; break; }
+      const mb = /^block\s+(.+):$/.exec(s2);
+      let cond;
+      if (mb) cond = parseExpr(mb[1], n2);
+      else if (s2 === 'remaining:') cond = null;
+      else throw new SdFault('E202', `mong đợi 'block điều-kiện:' hoặc 'remaining:', gặp '${s2}'`, n2);
+      this.i++;
+      const body = [];
+      for (;;) {
+        const s3 = this.cur()[1];
+        if (this.isClose(s3) || /^block\s+.+:$/.test(s3) || s3 === 'remaining:') break;
+        body.push(this.stmt());
+      }
+      const last = body[body.length - 1];
+      if (last && last[0] === 'sbback' && !this.modifies(body, v)) this.warn('W203', `nhánh Reback không thấy sửa biến '${v}' (nguy cơ lặp vô hạn)`, last[1]);
+      branches.push([cond, body]);
+    }
+    return ['sb', n, v, branches];
+  }
+}
+function isPP(src) { return /^\s*ssta\s*\{/m.test(src); }
+function buildProg(src, ctx) { return isPP(src) ? new PProg(preprocessPP(src), ctx) : new Prog(src, ctx); }
+
+function fstr(v) {
+  if (v instanceof Fl) return Number.isInteger(v.v) ? v.v.toFixed(1) : String(v.v);
+  if (typeof v === 'boolean') return v ? 'true' : 'false';
+  if (v instanceof NullPtr) return 'null';
+  if (v instanceof VarPtr) return '@' + v.name;
+  if (v instanceof ElemPtr) return v.blk ? `@heap[${v.idx}]` : `@mang[${v.idx}]`;
+  if (v instanceof FldPtr) return '@' + v.name;
+  if (v === null || v === undefined) return 'null';
+  if (Array.isArray(v)) return '[' + v.map(fstr).join(', ') + ']';
+  if (v instanceof Struct) return '{' + [...v.f].map(([k, x]) => `${k}: ${fstr(x)}`).join(', ') + '}';
+  return String(v);
+}
+
+class VM {
+  constructor(prog, stdin, write) {
+    this.p = prog; this.inp = splitIn(stdin); this.ip = 0; this.waitInput = false; this.write = write;
+    this.steps = 0; this.depth = 0; this.vfs = new Map();
+    this.globals = new Map(); this.heap = []; this.heapCells = 0; this.sbDepth = 0;
+  }
+  def(typ, size) {
+    if (size !== null && size !== undefined) return Array.from({ length: size }, () => this.def(typ, null));
+    if (typ === 'int') return 0;
+    if (typ === 'float') return new Fl(0);
+    if (typ === 'str') return '';
+    if (typ === 'bool') return false;
+    if (typ === 'ptr') return NULLP;
+    const f = new Map(); for (const [t, nm] of this.p.structs.get(typ)) f.set(nm, this.def(t, null));
+    return new Struct(f);
+  }
+  copy(v) {
+    if (v instanceof Struct) { const f = new Map(); for (const [k, x] of v.f) f.set(k, this.copy(x)); return new Struct(f); }
+    return v;
+  }
+  lookup(env, name, line) {
+    for (let i = env.length - 1; i >= 0; i--) if (env[i].has(name)) return env[i];
+    if (this.globals.has(name)) return this.globals;
+    throw new SdFault('E301', `biến '${name}' chưa được khai báo`, line);
+  }
+  initGlobals() {
+    for (const [nm, expr, line] of this.p.globalInit) {
+      if (this.globals.has(nm)) throw new SdFault('E302', `trùng tên biến toàn cục '${nm}'`, line);
+      this.globals.set(nm, this.copy(this.ev(expr, [new Map()], line)));
+    }
+  }
+  leakWarnings() { return this.heap.filter((b) => !b.freed).map((b) => ({ code: 'W302', line: b.line, msg: `vùng nhớ cấp phát ở dòng ${b.line} chưa được sta.free` })); }
+  derefGet(p, line) {
+    if (p instanceof NullPtr) throw new SdFault('E405', 'giải tham chiếu con trỏ rỗng', line);
+    if (p instanceof VarPtr) return p.scope.get(p.name);
+    if (p instanceof FldPtr) return p.obj.f.get(p.name);
+    if (p instanceof ElemPtr) {
+      if (p.blk && p.blk.freed) throw new SdFault('E405', 'đọc vùng nhớ đã sta.free', line);
+      if (p.idx < 0 || p.idx >= p.arr.length) throw new SdFault('E408', `truy cập ô ${p.idx} ngoài vùng 0..${p.arr.length - 1}`, line);
+      return p.arr[p.idx];
+    }
+    throw new SdFault('E305', '* chỉ dùng cho con trỏ', line);
+  }
+  derefSet(p, v, line) {
+    if (p instanceof NullPtr) throw new SdFault('E405', 'ghi qua con trỏ rỗng', line);
+    if (p instanceof VarPtr) p.scope.set(p.name, v);
+    else if (p instanceof FldPtr) p.obj.f.set(p.name, v);
+    else if (p instanceof ElemPtr) {
+      if (p.blk && p.blk.freed) throw new SdFault('E405', 'ghi vào vùng nhớ đã sta.free', line);
+      if (p.idx < 0 || p.idx >= p.arr.length) throw new SdFault('E408', `truy cập ô ${p.idx} ngoài vùng 0..${p.arr.length - 1}`, line);
+      p.arr[p.idx] = v;
+    } else throw new SdFault('E305', '* chỉ dùng cho con trỏ', line);
+  }
+  freeCall(e, env, line) {
+    if (e[2].length !== 1) throw new SdFault('E304', 'sta.free cần 1 đối số', line);
+    const p = this.ev(e[2][0], env, line);
+    if (p instanceof NullPtr) throw new SdFault('E406', 'giải phóng con trỏ rỗng hoặc giải phóng hai lần', line);
+    if (!(p instanceof ElemPtr) || !p.blk) throw new SdFault('E406', 'chỉ giải phóng được con trỏ do sta.alloc cấp', line);
+    if (p.blk.freed) throw new SdFault('E406', 'giải phóng hai lần cùng một vùng nhớ', line);
+    if (p.idx !== 0) throw new SdFault('E406', 'phải giải phóng đúng con trỏ đầu vùng', line);
+    p.blk.freed = true;
+    const t = e[2][0][0];
+    if (t === 'var' || t === 'idx' || t === 'fld' || t === 'deref' || t === 'gvar') this.assign(e[2][0], NULLP, env, line);
+    return null;
+  }
+  sbRun(st, env, n) {
+    this.sbDepth++; let backs = 0;
+    try {
+      for (;;) {
+        let chosen = null;
+        for (const [c, b] of st[3]) if (c !== null && truthy(this.ev(c, env, n))) { chosen = b; break; }
+        if (!chosen) { const r = st[3].find((x) => x[0] === null); if (!r) return; chosen = r[1]; }
+        try { this.run(chosen, env); return; }
+        catch (x) {
+          if (x instanceof SbBack) { if (++backs > 65536) throw new SdFault('E402', 'Reback vượt 65536 lần (vòng lặp vô hạn?)', n); if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước', n); continue; }
+          if (x instanceof SbExit) return;
+          throw x;
+        }
+      }
+    } finally { this.sbDepth--; }
+  }
+  chk(v, line) {
+    if (typeof v === 'number' && !Number.isSafeInteger(v)) throw new SdFault('E405', 'số nguyên vượt quá 2^53 (tràn số)', line);
+    return v;
+  }
+  ptrEq(a, b) {
+    if (a instanceof NullPtr || b instanceof NullPtr) return a instanceof NullPtr && b instanceof NullPtr;
+    if (a instanceof ElemPtr && b instanceof ElemPtr) return a.arr === b.arr && a.idx === b.idx;
+    if (a instanceof VarPtr && b instanceof VarPtr) return a.scope === b.scope && a.name === b.name;
+    if (a instanceof FldPtr && b instanceof FldPtr) return a.obj === b.obj && a.name === b.name;
+    return false;
+  }
+  arith(op, a, b, line) {
+    if (isPtr(a) || isPtr(b)) {
+      if (op === '==' || op === '!=') { const eq = this.ptrEq(a, b); return op === '==' ? eq : !eq; }
+      if ((op === '+' || op === '-') && isPtr(a) && typeof b === 'number') {
+        if (a instanceof NullPtr) throw new SdFault('E405', 'số học trên con trỏ rỗng', line);
+        if (a instanceof ElemPtr) return new ElemPtr(a.arr, a.idx + (op === '+' ? b : -b), a.blk);
+        if (b === 0) return a;
+        throw new SdFault('E408', 'số học con trỏ chỉ dùng trong vùng mảng hoặc Heap', line);
+      }
+      if (op === '+' && typeof a === 'number' && isPtr(b)) return this.arith('+', b, a, line);
+      if (op === '-' && a instanceof ElemPtr && b instanceof ElemPtr && a.arr === b.arr) return a.idx - b.idx;
+      throw new SdFault('E305', `không thể dùng '${op}' với con trỏ`, line);
+    }
+    if (op === '+' && typeof a === 'string' && typeof b === 'string') return a + b;
+    if (!isNum(a) || !isNum(b)) {
+      if (['==', '!='].includes(op) || (typeof a === 'string' && typeof b === 'string' && ['<', '<=', '>', '>='].includes(op))) {
+        const eq = a === b;
+        if (op === '==') return eq; if (op === '!=') return !eq;
+        return { '<': a < b, '<=': a <= b, '>': a > b, '>=': a >= b }[op];
+      }
+      throw new SdFault('E305', `sai kiểu: không thể dùng '${op}' giữa ${this.tn(a)} và ${this.tn(b)}`, line);
+    }
+    const fl = a instanceof Fl || b instanceof Fl; const x = nv(a), y = nv(b);
+    switch (op) {
+      case '+': return fl ? new Fl(x + y) : this.chk(x + y, line);
+      case '-': return fl ? new Fl(x - y) : this.chk(x - y, line);
+      case '*': return fl ? new Fl(x * y) : this.chk(x * y, line);
+      case '/': if (y === 0) throw new SdFault('E401', 'chia cho 0', line); return fl ? new Fl(x / y) : Math.trunc(x / y);
+      case '%': if (y === 0) throw new SdFault('E401', 'chia cho 0', line); return fl ? new Fl(x % y) : x % y;
+      case '==': return x === y; case '!=': return x !== y;
+      case '<': return x < y; case '<=': return x <= y; case '>': return x > y; default: return x >= y;
+    }
+  }
+  tn(v) { return isPtr(v) ? 'ptr' : v instanceof Fl ? 'float' : typeof v === 'number' ? 'int' : typeof v === 'string' ? 'str' : typeof v === 'boolean' ? 'bool' : Array.isArray(v) ? 'mảng' : 'cấu trúc'; }
+  ev(e, env, line) {
+    const k = e[0];
+    if (k === 'num' || k === 'str' || k === 'val') return e[1];
+    if (k === 'var') return this.lookup(env, e[1], line).get(e[1]);
+    if (k === 'gvar') { if (!this.globals.has(e[1])) throw new SdFault('E301', `biến toàn cục '${e[1]}' chưa khai báo`, line); return this.globals.get(e[1]); }
+    if (k === 'deref') return this.derefGet(this.ev(e[1], env, line), line);
+    if (k === 'addr') {
+      const t = e[1];
+      if (t[0] === 'var') { const sc = this.lookup(env, t[1], line), v = sc.get(t[1]); return Array.isArray(v) ? new ElemPtr(v, 0, null) : new VarPtr(sc, t[1]); }
+      if (t[0] === 'gvar') { if (!this.globals.has(t[1])) throw new SdFault('E301', `biến toàn cục '${t[1]}' chưa khai báo`, line); const v = this.globals.get(t[1]); return Array.isArray(v) ? new ElemPtr(v, 0, null) : new VarPtr(this.globals, t[1]); }
+      if (t[0] === 'idx') { const arr = this.ev(t[1], env, line), iv = this.ev(t[2], env, line); if (!Array.isArray(arr) || typeof iv !== 'number') throw new SdFault('E305', '@a[i] cần mảng và chỉ số nguyên', line); return new ElemPtr(arr, iv, null); }
+      if (t[0] === 'fld') { const o = this.ev(t[1], env, line); if (!(o instanceof Struct)) throw new SdFault('E305', '@x.f cần cấu trúc', line); return new FldPtr(o, t[2]); }
+      if (t[0] === 'deref') return this.ev(t[1], env, line);
+      throw new SdFault('E303', 'không lấy được địa chỉ của biểu thức này', line);
+    }
+    if (k === 'list') return e[1].map((x) => this.ev(x, env, line));
+    if (k === 'neg') { const v = this.ev(e[1], env, line); if (!isNum(v)) throw new SdFault('E305', 'dấu - cần số', line); return v instanceof Fl ? new Fl(-v.v) : -nv(v); }
+    if (k === 'not') return !truthy(this.ev(e[1], env, line));
+    if (k === 'idx') {
+      const b = this.ev(e[1], env, line), iv = this.ev(e[2], env, line);
+      if (!Array.isArray(b) && typeof b !== 'string') throw new SdFault('E305', 'chỉ số [] chỉ dùng cho mảng hoặc chuỗi', line);
+      if (typeof iv !== 'number') throw new SdFault('E305', 'chỉ số phải là số nguyên', line);
+      if (iv < 0 || iv >= b.length) throw new SdFault('E404', `chỉ số ${iv} ngoài khoảng 0..${b.length - 1}`, line);
+      return b[iv];
+    }
+    if (k === 'fld') {
+      const o = this.ev(e[1], env, line);
+      if (!(o instanceof Struct) || !o.f.has(e[2])) throw new SdFault('E301', `không có trường '${e[2]}'`, line);
+      return o.f.get(e[2]);
+    }
+    if (k === 'call') { if (e[1] === 'sta.free') return this.freeCall(e, env, line); return this.call(e[1], e[2].map((a) => this.ev(a, env, line)), line); }
+    const op = e[1], a = this.ev(e[2], env, line);
+    if (op === 'and') return truthy(a) ? this.ev(e[3], env, line) : a;
+    if (op === 'or') return truthy(a) ? a : this.ev(e[3], env, line);
+    return this.arith(op, a, this.ev(e[3], env, line), line);
+  }
+  call(name, args, line) {
+    const fn = this.p.fns.get(name);
+    if (fn) {
+      if (fn.params.length !== args.length) throw new SdFault('E304', `${name}: cần ${fn.params.length} đối số, nhận ${args.length}`, line);
+      if (++this.depth > DEPTH_LIMIT) throw new SdFault('E402', 'tràn ngăn xếp (đệ quy quá sâu)', line);
+      const sc = new Map(); fn.params.forEach(([, pn], i) => sc.set(pn, this.copy(args[i])));
+      try { this.run(fn.body, [sc]); }
+      catch (r) { if (r instanceof Ret) return this.copy(r.v); if (r instanceof SdFault && !r.file && fn.file) r.file = fn.file; throw r; }
+      finally { this.depth--; }
+      return null;
+    }
+    const need = (n) => { if (args.length !== n) throw new SdFault('E304', `${name}: cần ${n} đối số`, line); };
+    const str = (v) => { if (typeof v !== 'string') throw new SdFault('E305', `${name} cần chuỗi`, line); return v; };
+    const num = (v) => { if (!isNum(v)) throw new SdFault('E305', `${name} cần số`, line); return v; };
+    switch (name) {
+      case 'str.len': need(1); return str(args[0]).length;
+      case 'str.upper': need(1); return str(args[0]).toUpperCase();
+      case 'str.lower': need(1); return str(args[0]).toLowerCase();
+      case 'str.concat': need(2); return str(args[0]) + str(args[1]);
+      case 'math.abs': need(1); return num(args[0]) instanceof Fl ? new Fl(Math.abs(args[0].v)) : Math.abs(nv(args[0]));
+      case 'math.sqrt': need(1); if (nv(num(args[0])) < 0) throw new SdFault('E401', 'căn của số âm', line); return new Fl(Math.sqrt(nv(args[0])));
+      case 'math.max': case 'math.min': {
+        if (args.length < 1) throw new SdFault('E304', `${name}: cần ít nhất 1 đối số`, line);
+        args.forEach(num);
+        return args.reduce((p, c) => ((name === 'math.max' ? nv(c) > nv(p) : nv(c) < nv(p)) ? c : p));
+      }
+      case 'math.pow': {
+        need(2); num(args[0]); num(args[1]);
+        const r = Math.pow(nv(args[0]), nv(args[1]));
+        if (typeof args[0] === 'number' && typeof args[1] === 'number' && args[1] >= 0) return this.chk(r, line);
+        return new Fl(r);
+      }
+      case 'sta.alloc': {
+        need(1); const nb = nv(num(args[0])), cells = Math.ceil(nb / 8);
+        if (!(nb > 0)) throw new SdFault('E407', 'kích thước cấp phát phải dương', line);
+        if (this.heapCells + cells > 2000000) throw new SdFault('E407', 'hết bộ nhớ Heap', line);
+        const blk = { freed: false, line, cells: new Array(cells).fill(0) };
+        this.heap.push(blk); this.heapCells += cells; return new ElemPtr(blk.cells, 0, blk);
+      }
+      case 'mem.memset': {
+        need(3); const p = args[0], cnt = nv(num(args[2]));
+        if (!(p instanceof ElemPtr)) throw new SdFault('E305', 'mem.memset cần con trỏ vùng nhớ', line);
+        for (let q = 0; q < cnt; q++) this.derefSet(new ElemPtr(p.arr, p.idx + q, p.blk), args[1], line);
+        return null;
+      }
+      case 'sys.time': need(0); return new Fl(Date.now() / 1000);
+      case 'sys.sleep': need(1); num(args[0]); return null;
+      case 'draw.rect': {
+        need(4); const [x, , w, h] = args.map((a) => Math.trunc(nv(num(a))));
+        if (w < 2 || h < 2 || w > 200 || h > 100) throw new SdFault('E401', 'draw.rect: rộng 2..200, cao 2..100', line);
+        const pad = ' '.repeat(Math.max(0, x));
+        for (let r = 0; r < h; r++) this.write(pad + (r === 0 || r === h - 1 ? '+' + '-'.repeat(w - 2) + '+' : '|' + ' '.repeat(w - 2) + '|') + '\n', line);
+        return null;
+      }
+      case 'file.write': need(2); this.vfs.set(str(args[0]), str(args[1])); return null;
+      case 'file.read': {
+        need(1); const p = str(args[0]);
+        if (!this.vfs.has(p)) throw new SdFault('E403', `không có tệp '${p}' (tệp chỉ tồn tại trong phiên chạy)`, line);
+        return this.vfs.get(p);
+      }
+      default: throw new SdFault('E301', `hàm '${name}' chưa tồn tại`, line);
+    }
+  }
+  fmt(s, env, line) {
+    let res = '', i = 0;
+    while (i < s.length) {
+      if (s.startsWith('//', i)) { res += '/'; i += 2; continue; }
+      const m = /^\/([sdfb])(\d?)\{/.exec(s.slice(i, i + 4));
+      if (!m) { res += s[i]; i++; continue; }
+      const j = i + m[0].length; let d = 1, k = j;
+      while (d) {
+        if (k >= s.length) throw new SdFault('E201', "thiếu '}' đóng chỗ giữ chỗ", line);
+        if (s[k] === '{') d++; else if (s[k] === '}') d--; k++;
+      }
+      const v = this.ev(parseExpr(s.slice(j, k - 1), line), env, line);
+      const c = m[1];
+      if (c === 's') res += fstr(v);
+      else if (c === 'b') res += truthy(v) ? 'true' : 'false';
+      else {
+        if (!isNum(v)) throw new SdFault('E305', `/${c}{} cần số, nhận ${this.tn(v)}`, line);
+        res += c === 'd' ? String(Math.trunc(nv(v))) : nv(v).toFixed(m[2] === '' ? 2 : parseInt(m[2], 10));
+      }
+      i = k;
+    }
+    return res;
+  }
+  assign(lhs, val, env, line) {
+    const k = lhs[0];
+    if (k === 'var') this.lookup(env, lhs[1], line).set(lhs[1], val);
+    else if (k === 'idx') {
+      const b = this.ev(lhs[1], env, line), iv = this.ev(lhs[2], env, line);
+      if (!Array.isArray(b)) throw new SdFault('E305', 'chỉ gán được vào phần tử mảng', line);
+      if (typeof iv !== 'number') throw new SdFault('E305', 'chỉ số phải là số nguyên', line);
+      if (iv < 0 || iv >= b.length) throw new SdFault('E404', `chỉ số ${iv} ngoài khoảng 0..${b.length - 1}`, line);
+      b[iv] = val;
+    }
+    else if (k === 'fld') {
+      const o = this.ev(lhs[1], env, line);
+      if (!(o instanceof Struct) || !o.f.has(lhs[2])) throw new SdFault('E301', `không có trường '${lhs[2]}'`, line);
+      o.f.set(lhs[2], val);
+    }
+    else if (k === 'deref') this.derefSet(this.ev(lhs[1], env, line), val, line);
+    else if (k === 'gvar') { if (!this.globals.has(lhs[1])) throw new SdFault('E301', `biến toàn cục '${lhs[1]}' chưa khai báo`, line); this.globals.set(lhs[1], val); }
+    else throw new SdFault('E303', 'vế trái không gán được', line);
+  }
+  run(stmts, env) { const e = env.concat([new Map()]); for (const st of stmts) this.exec(st, e); }
+  setIpt(st, env, n, cur, line) {
+    const raw = line.trim(); let v;
+    if (typeof cur === 'number') { if (!/^[-+]?\d+$/.test(raw)) throw new SdFault('E403', `nhập sai kiểu int: '${raw}'`, n); v = parseInt(raw, 10); }
+    else if (cur instanceof Fl) { const f = Number(raw); if (raw === '' || Number.isNaN(f)) throw new SdFault('E403', `nhập sai kiểu float: '${raw}'`, n); v = new Fl(f); }
+    else v = raw;
+    this.assign(st[2], v, env, n);
+  }
+  exec(st, env) {
+    if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', st[1]);
+    const k = st[0], n = st[1];
+    if (k === 'decl') {
+      const [, , typ, nm, size, init] = st;
+      const sc = env[env.length - 1];
+      if (sc.has(nm) || (this.p.isPP && this.globals.has(nm))) throw new SdFault('E302', `trùng tên '${nm}'`, n);
+      let v = this.def(typ, size);
+      if (init !== null) v = this.copy(this.ev(init, env, n));
+      sc.set(nm, v);
+    }
+    else if (k === 'assign') this.assign(st[2], this.copy(this.ev(st[3], env, n)), env, n);
+    else if (k === 'pri') {
+      const a = st[2]; let text;
+      if (a.startsWith('"')) { const m = /^"(.*)"$/.exec(a); text = this.fmt(m ? m[1] : a.slice(1), env, n); }
+      else text = fstr(this.ev(parseExpr(a, n), env, n));
+      this.write(text + '\n', n);
+    }
+    else if (k === 'ipt') {
+      const cur = this.ev(st[2], env, n);
+      if (this.ip >= this.inp.length) {
+        if (this.waitInput) throw new NeedInput();
+        throw new SdFault('E403', 'hết dữ liệu nhập (thêm dòng vào tab Nhập liệu)', n);
+      }
+      this.setIpt(st, env, n, cur, this.inp[this.ip++]);
+    }
+    else if (k === 'nop') { /* init ... */ }
+    else if (k === 'sbback') { if (!this.sbDepth) throw new SdFault('E409', "'$$' ngoài ids sb là dừng khẩn cấp (Hard Halt)", n); throw new SbBack(); }
+    else if (k === 'sbexit') { if (!this.sbDepth) { if (st[2] === 'break') throw new Brk(); throw new SdFault('E202', "'transf' chỉ dùng trong ids sb", n); } throw new SbExit(); }
+    else if (k === 'sb') this.sbRun(st, env, n);
+    else if (k === 'expr') this.ev(st[2], env, n);
+    else if (k === 'ret') throw new Ret(this.ev(st[2], env, n));
+    else if (k === 'brk') throw new Brk();
+    else if (k === 'nxt') throw new Nxt();
+    else if (k === 'if') {
+      for (const [cond, b] of st[2]) if (cond === null || truthy(this.ev(cond, env, n))) { this.run(b, env); break; }
+    }
+    else if (k === 'while') {
+      while (truthy(this.ev(st[2], env, n))) {
+        if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', n);
+        try { this.run(st[3], env); } catch (x) { if (x instanceof Brk) break; if (!(x instanceof Nxt)) throw x; }
+      }
+    }
+    else if (k === 'for') {
+      const env2 = env.concat([new Map()]);
+      this.exec(st[2], env2);
+      while (truthy(this.ev(st[3], env2, n))) {
+        if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', n);
+        try { this.run(st[5], env2); } catch (x) { if (x instanceof Brk) break; if (!(x instanceof Nxt)) throw x; }
+        this.exec(st[4], env2);
+      }
+    }
+  }
+}
+
+
+function hasCall(e) {
+  if (e._h !== undefined) return e._h;
+  let h = e[0] === 'call';
+  if (!h) for (const c of e.slice(1)) {
+    if (!Array.isArray(c)) continue;
+    if (typeof c[0] === 'string') { if (hasCall(c)) { h = true; break; } }
+    else if (c.some((x) => Array.isArray(x) && hasCall(x))) { h = true; break; }
+  }
+  e._h = h; return h;
+}
+class DVM extends VM {
+  constructor(prog, stdin, write) { super(prog, stdin, write); this.stack = []; this.fileStack = []; }
+  curFile() { return this.fileStack.length ? this.fileStack[this.fileStack.length - 1] : null; }
+  *evG(e, env, line) {
+    if (!hasCall(e)) return this.ev(e, env, line);
+    const k = e[0];
+    if (k === 'call') { if (e[1] === 'sta.free') return this.ev(e, env, line); const a = []; for (const x of e[2]) a.push(yield* this.evG(x, env, line)); return yield* this.callG(e[1], a, line); }
+    if (k === 'bin') {
+      const a = yield* this.evG(e[2], env, line);
+      if (e[1] === 'and') return truthy(a) ? yield* this.evG(e[3], env, line) : a;
+      if (e[1] === 'or') return truthy(a) ? a : yield* this.evG(e[3], env, line);
+      return this.arith(e[1], a, yield* this.evG(e[3], env, line), line);
+    }
+    if (k === 'neg' || k === 'not') return this.ev([k, ['val', yield* this.evG(e[1], env, line)]], env, line);
+    if (k === 'idx') { const b = yield* this.evG(e[1], env, line); const i = yield* this.evG(e[2], env, line); return this.ev(['idx', ['val', b], ['val', i]], env, line); }
+    if (k === 'fld') return this.ev(['fld', ['val', yield* this.evG(e[1], env, line)], e[2]], env, line);
+    if (k === 'list') { const r = []; for (const x of e[1]) r.push(yield* this.evG(x, env, line)); return r; }
+    return this.ev(e, env, line);
+  }
+  *callG(name, args, line) {
+    const fn = this.p.fns.get(name);
+    if (!fn) return this.call(name, args, line);
+    if (fn.params.length !== args.length) throw new SdFault('E304', `${name}: cần ${fn.params.length} đối số, nhận ${args.length}`, line);
+    if (++this.depth > DEPTH_LIMIT) throw new SdFault('E402', 'tràn ngăn xếp (đệ quy quá sâu)', line);
+    const sc = new Map(); fn.params.forEach(([, pn], i) => sc.set(pn, this.copy(args[i])));
+    this.stack.push(name + '(' + args.map(fstr).join(', ') + ')');
+    this.fileStack.push(fn.file || null);
+    try { yield* this.runG(fn.body, [sc]); }
+    catch (r) { if (r instanceof Ret) return this.copy(r.v); if (r instanceof SdFault && !r.file && fn.file) r.file = fn.file; throw r; }
+    finally { this.depth--; this.stack.pop(); this.fileStack.pop(); }
+    return null;
+  }
+  *fmtG(s, env, line) {
+    let res = '', i = 0;
+    while (i < s.length) {
+      if (s.startsWith('//', i)) { res += '/'; i += 2; continue; }
+      const m = /^\/([sdfb])(\d?)\{/.exec(s.slice(i, i + 4));
+      if (!m) { res += s[i]; i++; continue; }
+      const j = i + m[0].length; let d = 1, k = j;
+      while (d) {
+        if (k >= s.length) throw new SdFault('E201', "thiếu '}' đóng chỗ giữ chỗ", line);
+        if (s[k] === '{') d++; else if (s[k] === '}') d--; k++;
+      }
+      const v = yield* this.evG(parseExpr(s.slice(j, k - 1), line), env, line);
+      const c = m[1];
+      if (c === 's') res += fstr(v);
+      else if (c === 'b') res += truthy(v) ? 'true' : 'false';
+      else {
+        if (!isNum(v)) throw new SdFault('E305', `/${c}{} cần số, nhận ${this.tn(v)}`, line);
+        res += c === 'd' ? String(Math.trunc(nv(v))) : nv(v).toFixed(m[2] === '' ? 2 : parseInt(m[2], 10));
+      }
+      i = k;
+    }
+    return res;
+  }
+  *runG(stmts, env) { const e = env.concat([new Map()]); for (const st of stmts) yield* this.execG(st, e, false); }
+  *execG(st, env, quiet) {
+    const k = st[0], n = st[1];
+    if (!quiet) yield { line: n, env, depth: this.stack.length, stack: this.stack.slice(), file: this.curFile() };
+    if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', n);
+    if (k === 'decl') {
+      const [, , typ, nm, size, init] = st; const sc = env[env.length - 1];
+      if (sc.has(nm) || (this.p.isPP && this.globals.has(nm))) throw new SdFault('E302', `trùng tên '${nm}'`, n);
+      let v = this.def(typ, size);
+      if (init !== null) v = this.copy(yield* this.evG(init, env, n));
+      sc.set(nm, v);
+    }
+    else if (k === 'assign') { const v = this.copy(yield* this.evG(st[3], env, n)); this.assign(st[2], v, env, n); }
+    else if (k === 'ipt') {
+      const cur = this.ev(st[2], env, n);
+      if (this.ip >= this.inp.length) { const ln = yield { need: true, line: n, env, depth: this.stack.length, stack: this.stack.slice(), file: this.curFile() }; this.inp.push(String(ln)); }
+      this.setIpt(st, env, n, cur, this.inp[this.ip++]);
+    }
+    else if (k === 'pri') {
+      const a = st[2]; let text;
+      if (a.startsWith('"')) { const m = /^"(.*)"$/.exec(a); text = yield* this.fmtG(m ? m[1] : a.slice(1), env, n); }
+      else text = fstr(yield* this.evG(parseExpr(a, n), env, n));
+      this.write(text + '\n', n);
+    }
+    else if (k === 'expr') yield* this.evG(st[2], env, n);
+    else if (k === 'ret') throw new Ret(yield* this.evG(st[2], env, n));
+    else if (k === 'if') {
+      for (const [cond, b] of st[2]) if (cond === null || truthy(yield* this.evG(cond, env, n))) { yield* this.runG(b, env); break; }
+    }
+    else if (k === 'while') {
+      while (truthy(yield* this.evG(st[2], env, n))) {
+        if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', n);
+        try { yield* this.runG(st[3], env); } catch (x) { if (x instanceof Brk) break; if (!(x instanceof Nxt)) throw x; }
+        yield { line: n, env, depth: this.stack.length, stack: this.stack.slice(), file: this.curFile() };
+      }
+    }
+    else if (k === 'for') {
+      const env2 = env.concat([new Map()]);
+      yield* this.execG(st[2], env2, true);
+      while (truthy(yield* this.evG(st[3], env2, n))) {
+        if (++this.steps > STEP_LIMIT) throw new SdFault('E501', 'vượt giới hạn số bước (có thể là vòng lặp vô hạn)', n);
+        try { yield* this.runG(st[5], env2); } catch (x) { if (x instanceof Brk) break; if (!(x instanceof Nxt)) throw x; }
+        yield* this.execG(st[4], env2, true);
+      }
+    }
+    else if (k === 'sb') yield* this.sbRunG(st, env, n);
+    else this.exec(st, env);
+  }
+  *sbRunG(st, env, n) {
+    this.sbDepth++; let backs = 0;
+    try {
+      for (;;) {
+        let chosen = null;
+        for (const [c, b] of st[3]) if (c !== null && truthy(yield* this.evG(c, env, n))) { chosen = b; break; }
+        if (!chosen) { const r = st[3].find((x) => x[0] === null); if (!r) return; chosen = r[1]; }
+        try { yield* this.runG(chosen, env); return; }
+        catch (x) {
+          if (x instanceof SbBack) {
+            if (++backs > 65536) throw new SdFault('E402', 'Reback vượt 65536 lần (vòng lặp vô hạn?)', n);
+            yield { line: n, env, depth: this.stack.length, stack: this.stack.slice(), file: this.curFile() }; continue;
+          }
+          if (x instanceof SbExit) return;
+          throw x;
+        }
+      }
+    } finally { this.sbDepth--; }
+  }
+  *main() {
+    this.initGlobals();
+    try { yield* this.runG(this.p.main, [new Map()]); return 0; }
+    catch (r) { if (r instanceof Ret) return typeof r.v === 'number' || r.v instanceof Fl ? Math.trunc(nv(r.v)) : 0; throw r; }
+  }
+}
+
+/* Phien chay co the dung / chay tung buoc / cho nhap. */
+function createDebug(src, stdin, onOut, opts) {
+  const d = { out: '', done: false, fault: null, rc: null, pos: null, waiting: false, vm: null, warnings: [] };
+  const mk = () => ({ load: opts && opts.load, stack: opts && opts.entry ? [String(opts.entry).toLowerCase()] : [], done: new Set() });
+  const pre = checkAll(src, opts).fault;
+  if (pre) { d.done = true; d.fault = pre; d.rc = 255; return d; }
+  const prog = buildProg(src, mk());
+  const vm = new DVM(prog, stdin || '', (s, ln) => {
+    if (d.out.length + s.length > OUT_LIMIT) throw new SdFault('E501', 'đầu ra quá dài', ln);
+    d.out += s; if (onOut) onOut(s);
+  });
+  d.vm = vm; const gen = vm.main();
+  const fail = (e) => {
+    d.done = true; d.pos = null; d.waiting = false; d.rc = 255;
+    d.fault = e instanceof SdFault ? e : e instanceof RangeError ? new SdFault('E402', 'tràn ngăn xếp (đệ quy quá sâu)', 0)
+      : (e instanceof Brk || e instanceof Nxt) ? new SdFault('E202', "'brk' hoặc 'nxt' đặt ngoài vòng lặp", 0)
+      : new SdFault('E500', 'lỗi nội bộ: ' + (e && e.message), 0);
+  };
+  /* tien toi diem dung ke tiep */
+  d.next = (line) => {
+    if (d.done) return;
+    try {
+      const r = d.waiting ? gen.next(line) : gen.next();
+      d.waiting = false;
+      if (r.done) { d.done = true; d.rc = r.value; d.pos = null; d.warnings = vm.leakWarnings(); }
+      else { d.pos = r.value; d.waiting = !!r.value.need; }
+    } catch (e) { fail(e); }
+  };
+  /* mode: 'in' | 'over' | 'out' | 'go'; bps: Set dong */
+  d.go = (mode, bps) => {
+    const depth0 = d.pos ? d.pos.depth : 0, line0 = d.pos ? d.pos.line : 0;
+    let first = true;
+    for (let i = 0; i < 3000000 && !d.done; i++) {
+      d.next(d.waiting ? undefined : undefined);
+      if (d.done || d.waiting) return;
+      const p = d.pos;
+      if (mode === 'in') return;
+      if (mode === 'over' && p.depth <= depth0) return;
+      if (mode === 'out' && p.depth < depth0) return;
+      if (bps && bps.has((p.file || '') + ':' + p.line)) return;
+      first = false;
+    }
+  };
+  d.vars = () => {
+    const seen = new Set(), rows = [];
+    if (!d.pos) return rows;
+    const env = d.pos.env;
+    for (let i = env.length - 1; i >= 0; i--) for (const [k, v] of env[i]) if (!seen.has(k)) { seen.add(k); rows.push([k, fstr(v), v instanceof Fl ? 'float' : vm.tn(v)]); }
+    return rows;
+  };
+  d.next();           /* dung o lenh dau tien cua main */
+  return d;
+}
+
+/* Phan tich de bao loi + canh bao truc tiep. */
+function checkAll(src, opts) {
+  PARSE_WARN.length = 0;
+  try {
+    const p = buildProg(src, { load: opts && opts.load, stack: opts && opts.entry ? [String(opts.entry).toLowerCase()] : [], done: new Set() });
+    const seen = new Set(), w = [];
+    for (const x of (p.warnings || []).concat(PARSE_WARN)) { const key = x.code + x.line; if (!seen.has(key)) { seen.add(key); w.push(x); } }
+    if (p.main === null) return { fault: new SdFault('E204', isPP(src) ? "thiếu khung chính trong define[...]{ main: {...} } €" : "thiếu khối 'sta(main){ ... }'", 1), warnings: w };
+    return { fault: null, warnings: w };
+  } catch (e) {
+    let f = e instanceof SdFault ? e : new SdFault('E202', String(e.message || e), 1);
+    if ((f.code === 'E202' || f.code === 'E201') && !isPP(src) && /\b(ids\.|iptedt\.|define\s*\[)/.test(src)) f = new SdFault(f.code, f.msg + " (có vẻ là mã Sd++: cần bọc trong 'ssta { ... }' và kết thúc bằng '##')", f.line);
+    return { fault: f, warnings: [] };
+  }
+}
+function checkSource(src, opts) { return checkAll(src, opts).fault; }
+
+function runSource(src, stdin, opts) {
+  let out = ''; let outLen = 0; const t0 = Date.now();
+  const write = (s, line) => {
+    outLen += s.length;
+    if (outLen > OUT_LIMIT) throw new SdFault('E501', 'đầu ra quá dài (giới hạn 400000 ký tự)', line);
+    out += s;
+  };
+  const fin = (rc, fault, warnings) => ({ rc, out, fault: fault || null, warnings: warnings || [], ms: Date.now() - t0 });
+  const pre = checkSource(src, opts);
+  if (pre) return fin(255, pre);
+  try {
+    const prog = buildProg(src, { load: opts && opts.load, stack: opts && opts.entry ? [String(opts.entry).toLowerCase()] : [], done: new Set() });
+    const vm = new VM(prog, stdin || '', write); vm.waitInput = !!(opts && opts.interactive);
+    try { vm.initGlobals(); vm.run(prog.main, [new Map()]); return fin(0, null, vm.leakWarnings()); }
+    catch (r) {
+      if (r instanceof Ret) return fin(typeof r.v === 'number' || r.v instanceof Fl ? Math.trunc(nv(r.v)) : 0, null, vm.leakWarnings());
+      throw r;
+    }
+  } catch (e) {
+    if (e instanceof NeedInput) { const r = fin(0); r.needInput = true; return r; }
+    if (e instanceof SdFault) return fin(255, e);
+    if (e instanceof RangeError) return fin(255, new SdFault('E402', 'tràn ngăn xếp (đệ quy quá sâu)', 0));
+    if (e instanceof Brk || e instanceof Nxt) return fin(255, new SdFault('E202', "'brk' hoặc 'nxt' đặt ngoài vòng lặp", 0));
+    return fin(255, new SdFault('E500', 'lỗi nội bộ: ' + (e && e.message), 0));
+  }
+}
+if (typeof module !== 'undefined') module.exports = { runSource, checkSource, checkAll, createDebug, SdFault };
+
+</script>
+<script>
+(function(){
+'use strict';
+var CASES=[{"t": "Chương trình Hello", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(pri) => \"Xin chao, Sd!\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Ghi chú một dòng và nhiều dòng", "c": "imp*ioprt.ed\n\n\\\\ Chuong trinh chao hai dong.\n   Ghi chu khoi co the dai nhieu dong. \\\\\nsta(main){\n    iid: sta(pri) => \"Dong 1\" ed      \\\\ in dong 1 \\\\\n    iid: sta(pri) => \"Dong 2\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Khai báo biến", "c": "sta(main){\n    iid: sta(int a) ed                       \\\\ khai bao, mac dinh a = 0 \\\\\n    iid: sta(int b) => edt: sta(b = 7) ed    \\\\ khai bao va dat gia tri \\\\\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Chia nguyên, chia dư, chia số thực", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a) => edt: sta(a = 7) ed\n    iid: sta(int b) => edt: sta(b = 2) ed\n    iid: sta(int q) => edt: sta(q = a / b) ed     \\\\ q = 3 \\\\\n    iid: sta(int r) => edt: sta(r = a % b) ed     \\\\ r = 1 \\\\\n    iid: sta(float f) => edt: sta(f = 7.0 / 2.0) ed\n    iid: sta(pri) => \"q=/d{q} r=/d{r} f=/f{f}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Nhập hai số và in tổng", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a) ed\n    iid: sta(int b) ed\n    iid: sta(pri) => \"Nhap a:\" ed\n    iid: sta(ipt) => edt: sta(a) ed\n    iid: sta(pri) => \"Nhap b:\" ed\n    iid: sta(ipt) => edt: sta(b) ed\n    iid: sta(pri) => \"/d{a} + /d{b} = /d{a + b}\" ed\n    iid: ref* 0 ed\n}", "i": "3\n4"}, {"t": "Đổi độ C sang độ F", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(float c) ed\n    iid: sta(float f) ed\n    iid: sta(pri) => \"Nhap do C:\" ed\n    iid: sta(ipt) => edt: sta(c) ed\n    iid: sta(f = c * 9.0 / 5.0 + 32.0) ed\n    iid: sta(pri) => \"/f{c} do C = /f{f} do F\" ed\n    iid: ref* 0 ed\n}", "i": "100"}, {"t": "Xếp loại theo điểm", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(float diem) ed\n    iid: sta(pri) => \"Nhap diem:\" ed\n    iid: sta(ipt) => edt: sta(diem) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(diem >= 8.0) {\n            iid: sta(pri) => \"Gioi\" ed\n        }\n        sta(diem >= 6.5) {\n            iid: sta(pri) => \"Kha\" ed\n        }\n        sta(diem >= 5.0) {\n            iid: sta(pri) => \"Trung binh\" ed\n        }\n        sta(else) {\n            iid: sta(pri) => \"Yeu\" ed\n        }\n    bln ed\n    iid: ref* 0 ed\n}", "i": "7.0"}, {"t": "Biến bool và \\sd|and|, \\sd|or|, \\sd|not|", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int tuoi) => edt: sta(tuoi = 17) ed\n    iid: sta(bool nguoi_lon) => edt: sta(nguoi_lon = tuoi >= 18) ed\n    iid: sta(bool hoc_sinh) => edt: sta(hoc_sinh = true) ed\n    iid: sta(bool giam_gia) => edt: sta(giam_gia = hoc_sinh or tuoi < 12) ed\n    iid: sta(pri) => \"nguoi lon: /b{nguoi_lon}\" ed\n    iid: sta(pri) => \"giam gia : /b{giam_gia}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Số chẵn, lẻ, âm, dương", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) => edt: sta(n = -4) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(n > 0) {\n            iid: sta(pri) => \"duong\" ed\n        }\n        sta(n < 0) {\n            iid: sta(pri) => \"am\" ed\n            iid: sta(bolean) => cdn,tf:\n                sta(n % 2 == 0) {\n                    iid: sta(pri) => \"va la so chan\" ed\n                }\n            bln ed\n        }\n        sta(else) {\n            iid: sta(pri) => \"bang khong\" ed\n        }\n    bln ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Tổng từ 1 đến 10", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int tong) => edt: sta(tong = 0) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 1 ' i <= 10 ' i++) {\n            iid: sta(tong = tong + i) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Tong = /d{tong}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Tổng các chữ số của một số", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) => edt: sta(n = 12345) ed\n    iid: sta(int tong) => edt: sta(tong = 0) ed\n    iid: sta(while) => cdn,edt:\n        dbl sta(n > 0) {\n            iid: sta(tong = tong + n % 10) ed\n            iid: sta(n = n / 10) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Tong cac chu so = /d{tong}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Bội số đầu tiên của 7 lớn hơn 100", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 101 ' i <= 200 ' i++) {\n            iid: sta(bolean) => cdn,tf:\n                sta(i % 7 == 0) {\n                    iid: sta(pri) => \"Boi 7 dau tien: /d{i}\" ed\n                    iid: brk ed\n                }\n            bln ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Bảng cửu chương 2 đến 4", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(for) => cdn,chck:\n        dbl sta(int a = 2 ' a <= 4 ' a++) {\n            iid: sta(for) => cdn,chck:\n                dbl sta(int b = 1 ' b <= 3 ' b++) {\n                    iid: sta(pri) => \"/d{a} x /d{b} = /d{a * b}\" ed\n                }\n            dbl ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Khai báo mảng, đọc và ghi phần tử", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a[5]) => edt: sta(a = [4 ' 9 ' 1 ' 7 ' 3]) ed\n    iid: sta(a[0] = 10) ed\n    iid: sta(pri) => \"a[0] = /d{a[0]}, a[4] = /d{a[4]}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Tìm phần tử lớn nhất", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a[5]) => edt: sta(a = [4 ' 9 ' 1 ' 7 ' 3]) ed\n    iid: sta(int mx) => edt: sta(mx = a[0]) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 1 ' i < 5 ' i++) {\n            iid: sta(bolean) => cdn,tf:\n                sta(a[i] > mx) {\n                    iid: sta(mx = a[i]) ed\n                }\n            bln ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Max = /d{mx}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Sắp xếp tăng dần", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a[5]) => edt: sta(a = [5 ' 2 ' 9 ' 1 ' 7]) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 0 ' i < 4 ' i++) {\n            iid: sta(for) => cdn,chck:\n                dbl sta(int j = 0 ' j < 4 - i ' j++) {\n                    iid: sta(bolean) => cdn,tf:\n                        sta(a[j] > a[j + 1]) {\n                            iid: sta(int t) => edt: sta(t = a[j]) ed\n                            iid: sta(a[j] = a[j + 1]) ed\n                            iid: sta(a[j + 1] = t) ed\n                        }\n                    bln ed\n                }\n            dbl ed\n        }\n    dbl ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int k = 0 ' k < 5 ' k++) {\n            iid: sta(pri) => \"a[/d{k}] = /d{a[k]}\" ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Các thao tác chuỗi", "c": "imp*ioprt.ed\nimp*str.ed\n\nsta(main){\n    iid: sta(str ten) => edt: sta(ten = \"Sd++\") ed\n    iid: sta(int n) => edt: sta(n = str.len(ten)) ed\n    iid: sta(str hoa) => edt: sta(hoa = str.upper(\"sd lang\")) ed\n    iid: sta(str ghep) => edt: sta(ghep = str.concat(ten ' \"!\")) ed\n    iid: sta(pri) => \"/s{ten} dai /d{n} ky tu\" ed\n    iid: sta(pri) => \"/s{hoa} va /s{ghep}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Hàm cộng hai số", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta cong(int a ' int b) -> int {\n        iid: ref* a + b ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(int s) => edt: sta(s = cong(3 ' 4)) ed\n    iid: sta(pri) => \"3 + 4 = /d{s}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Giai thừa bằng đệ quy", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta giaithua(int n) -> int {\n        iid: sta(bolean) => cdn,tf:\n            sta(n <= 1) {\n                iid: ref* 1 ed\n            }\n        bln ed\n        iid: ref* n * giaithua(n - 1) ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(pri) => \"5! = /d{giaithua(5)}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Hàm tính tổng mảng", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta tong(int a[5]) -> int {\n        iid: sta(int s) => edt: sta(s = 0) ed\n        iid: sta(for) => cdn,chck:\n            dbl sta(int i = 0 ' i < 5 ' i++) {\n                iid: sta(s = s + a[i]) ed\n            }\n        dbl ed\n        iid: ref* s ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(int d[5]) => edt: sta(d = [1 ' 2 ' 3 ' 4 ' 5]) ed\n    iid: sta(pri) => \"Tong = /d{tong(d)}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Thủ tục chào và lệnh call", "c": "imp*ioprt.ed\n\niid: sta(void) => unkw:\n    sta chaomung(str ten) {\n        iid: sta(pri) => \"Xin chao, /s{ten}!\" ed\n    }\nvoid ed\n\nsta(main){\n    iid: sta(pri) => \"Bat dau\" ed\n    iid: call chaomung(\"An\") ed\n    iid: call chaomung(\"Binh\") ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Khai báo và dùng cấu trúc", "c": "imp*ioprt.ed\n\niid: sta(struct) => dta:\n    sta SinhVien { str ten ' int tuoi ' float diem }\nstrt ed\n\nsta(main){\n    iid: sta(SinhVien sv) ed\n    iid: sta(sv.ten = \"An\") ed\n    iid: sta(sv.tuoi = 19) ed\n    iid: sta(sv.diem = 8.5) ed\n    iid: sta(pri) => \"/s{sv.ten}, /d{sv.tuoi} tuoi, diem /f{sv.diem}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Tìm sinh viên điểm cao nhất", "c": "imp*ioprt.ed\n\niid: sta(struct) => dta:\n    sta SinhVien { str ten ' float diem }\nstrt ed\n\nsta(main){\n    iid: sta(SinhVien ds[3]) ed\n    iid: sta(ds[0].ten = \"An\") ed\n    iid: sta(ds[0].diem = 7.0) ed\n    iid: sta(ds[1].ten = \"Binh\") ed\n    iid: sta(ds[1].diem = 9.0) ed\n    iid: sta(ds[2].ten = \"Chi\") ed\n    iid: sta(ds[2].diem = 8.0) ed\n    iid: sta(int vt) => edt: sta(vt = 0) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 1 ' i < 3 ' i++) {\n            iid: sta(bolean) => cdn,tf:\n                sta(ds[i].diem > ds[vt].diem) {\n                    iid: sta(vt = i) ed\n                }\n            bln ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Cao nhat: /s{ds[vt].ten}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Hàm nhận một cấu trúc", "c": "imp*ioprt.ed\n\niid: sta(struct) => dta:\n    sta Diem { int x ' int y }\nstrt ed\n\niid: sta(fn) => rtn:\n    sta tong(Diem p) -> int {\n        iid: ref* p.x + p.y ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(Diem p) ed\n    iid: sta(p.x = 3) ed\n    iid: sta(p.y = 4) ed\n    iid: sta(pri) => \"x + y = /d{tong(p)}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Kiểm tra dữ liệu nhập và trả điểm lỗi", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int tuoi) ed\n    iid: sta(pri) => \"Nhap tuoi:\" ed\n    iid: sta(ipt) => edt: sta(tuoi) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(tuoi < 0 or tuoi > 150) {\n            iid: sta(pri) => \"Tuoi khong hop le\" ed\n            iid: ref* 2 ed\n        }\n    bln ed\n    iid: sta(pri) => \"Tuoi hop le: /d{tuoi}\" ed\n    iid: ref* 0 ed\n}", "i": "200"}, {"t": "Căn, lũy thừa, lớn nhất", "c": "imp*ioprt.ed\nimp*math.ed\n\nsta(main){\n    iid: sta(float c) => edt: sta(c = math.sqrt(2.0)) ed\n    iid: sta(int p) => edt: sta(p = math.pow(2 ' 10)) ed\n    iid: sta(int m) => edt: sta(m = math.max(3 ' 8)) ed\n    iid: sta(pri) => \"sqrt2=/f3{c} 2^10=/d{p} max=/d{m}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Ghi rồi đọc lại một tệp", "c": "imp*ioprt.ed\nimp*file.ed\n\nsta(main){\n    iid: call file.write(\"nhat_ky.txt\" ' \"Sd++ hoat dong\") ed\n    iid: sta(str s) => edt: sta(s = file.read(\"nhat_ky.txt\")) ed\n    iid: sta(pri) => \"Doc lai: /s{s}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "Sổ điểm lớp", "c": "imp*ioprt.ed\n\niid: sta(struct) => dta:\n    sta HocSinh { str ten ' float diem }\nstrt ed\n\niid: sta(fn) => rtn:\n    sta xeploai(float d) -> str {\n        iid: sta(str kq) => edt: sta(kq = \"Yeu\") ed\n        iid: sta(bolean) => cdn,tf:\n            sta(d >= 8.0) {\n                iid: sta(kq = \"Gioi\") ed\n            }\n            sta(d >= 6.5) {\n                iid: sta(kq = \"Kha\") ed\n            }\n            sta(d >= 5.0) {\n                iid: sta(kq = \"Trung binh\") ed\n            }\n        bln ed\n        iid: ref* kq ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(HocSinh ds[3]) ed\n    iid: sta(float tong) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 0 ' i < 3 ' i++) {\n            iid: sta(pri) => \"Ten hoc sinh /d{i + 1}:\" ed\n            iid: sta(ipt) => edt: sta(ds[i].ten) ed\n            iid: sta(pri) => \"Diem:\" ed\n            iid: sta(ipt) => edt: sta(ds[i].diem) ed\n            iid: sta(tong = tong + ds[i].diem) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"--- Bang diem ---\" ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 0 ' i < 3 ' i++) {\n            iid: sta(str lx) => edt: sta(lx = xeploai(ds[i].diem)) ed\n            iid: sta(pri) => \"/s{ds[i].ten} /f{ds[i].diem} /s{lx}\" ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Trung binh lop: /f{tong / 3.0}\" ed\n    iid: ref* 0 ed\n}", "i": "An\n7.0\nBinh\n9.0\nChi\n4.5"}, {"t": "=Đáp án 1.1", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(pri) => \"Nguyen Van A\" ed\n    iid: sta(pri) => \"Lop 10A1\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 2.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a) => edt: sta(a = 12) ed\n    iid: sta(int b) => edt: sta(b = 5) ed\n    iid: sta(pri) => \"tong = /d{a + b}\" ed\n    iid: sta(pri) => \"hieu = /d{a - b}\" ed\n    iid: sta(pri) => \"tich = /d{a * b}\" ed\n    iid: sta(pri) => \"thuong = /d{a / b}, du = /d{a % b}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 2.3", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(float r) => edt: sta(r = 2.5) ed\n    iid: sta(float pi) => edt: sta(pi = 3.14159) ed\n    iid: sta(pri) => \"chu vi = /f{2.0 * pi * r}\" ed\n    iid: sta(pri) => \"dien tich = /f{pi * r * r}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 3.1", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(str ten) ed\n    iid: sta(int tuoi) ed\n    iid: sta(pri) => \"Ten:\" ed\n    iid: sta(ipt) => edt: sta(ten) ed\n    iid: sta(pri) => \"Tuoi:\" ed\n    iid: sta(ipt) => edt: sta(tuoi) ed\n    iid: sta(pri) => \"Xin chao /s{ten}, nam sau /d{tuoi + 1} tuoi\" ed\n    iid: ref* 0 ed\n}", "i": "An\n20"}, {"t": "=Đáp án 3.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(float dai) ed\n    iid: sta(float rong) ed\n    iid: sta(ipt) => edt: sta(dai) ed\n    iid: sta(ipt) => edt: sta(rong) ed\n    iid: sta(pri) => \"Chu vi = /f{2.0 * (dai + rong)}\" ed\n    iid: sta(pri) => \"Dien tich = /f{dai * rong}\" ed\n    iid: ref* 0 ed\n}", "i": "3\n4"}, {"t": "=Đáp án 3.3", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) ed\n    iid: sta(ipt) => edt: sta(n) ed\n    iid: sta(pri) => \"Tram: /d{n / 100}\" ed\n    iid: sta(pri) => \"Chuc: /d{n / 10 % 10}\" ed\n    iid: sta(pri) => \"Don vi: /d{n % 10}\" ed\n    iid: ref* 0 ed\n}", "i": "123"}, {"t": "=Đáp án 4.1", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) ed\n    iid: sta(ipt) => edt: sta(n) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(n % 2 == 0) {\n            iid: sta(pri) => \"chan\" ed\n        }\n        sta(else) {\n            iid: sta(pri) => \"le\" ed\n        }\n    bln ed\n    iid: ref* 0 ed\n}", "i": "7"}, {"t": "=Đáp án 4.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a) ed\n    iid: sta(int b) ed\n    iid: sta(int c) ed\n    iid: sta(ipt) => edt: sta(a) ed\n    iid: sta(ipt) => edt: sta(b) ed\n    iid: sta(ipt) => edt: sta(c) ed\n    iid: sta(int m) => edt: sta(m = a) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(b > m) {\n            iid: sta(m = b) ed\n        }\n    bln ed\n    iid: sta(bolean) => cdn,tf:\n        sta(c > m) {\n            iid: sta(m = c) ed\n        }\n    bln ed\n    iid: sta(pri) => \"Lon nhat: /d{m}\" ed\n    iid: ref* 0 ed\n}", "i": "3\n9\n5"}, {"t": "=Đáp án 4.4", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(float a) ed\n    iid: sta(float b) ed\n    iid: sta(ipt) => edt: sta(a) ed\n    iid: sta(ipt) => edt: sta(b) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(a != 0.0) {\n            iid: sta(pri) => \"x = /f{-b / a}\" ed\n        }\n        sta(b == 0.0) {\n            iid: sta(pri) => \"vo so nghiem\" ed\n        }\n        sta(else) {\n            iid: sta(pri) => \"vo nghiem\" ed\n        }\n    bln ed\n    iid: ref* 0 ed\n}", "i": "2\n-4"}, {"t": "=Đáp án 5.1", "c": "sta(main){\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 2 ' i <= 20 ' i = i + 2) {\n            iid: sta(pri) => \"/d{i}\" ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 5.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) ed\n    iid: sta(ipt) => edt: sta(n) ed\n    iid: sta(int gt) => edt: sta(gt = 1) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 2 ' i <= n ' i++) {\n            iid: sta(gt = gt * i) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"/d{n}! = /d{gt}\" ed\n    iid: ref* 0 ed\n}", "i": "5"}, {"t": "=Đáp án 5.3 (với n > 0)", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) ed\n    iid: sta(ipt) => edt: sta(n) ed\n    iid: sta(int dem) => edt: sta(dem = 0) ed\n    iid: sta(while) => cdn,edt:\n        dbl sta(n > 0) {\n            iid: sta(dem++) ed\n            iid: sta(n = n / 10) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"So chu so: /d{dem}\" ed\n    iid: ref* 0 ed\n}", "i": "12345"}, {"t": "=Đáp án 5.4", "c": "imp*ioprt.ed\nimp*str.ed\n\nsta(main){\n    iid: sta(str dong) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int k = 1 ' k <= 4 ' k++) {\n            iid: sta(dong = str.concat(dong ' \"*\")) ed\n            iid: sta(pri) => \"/s{dong}\" ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 6.1", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a[5]) => edt: sta(a = [3 ' 8 ' 2 ' 6 ' 1]) ed\n    iid: sta(int s) => edt: sta(s = 0) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 0 ' i < 5 ' i++) {\n            iid: sta(s = s + a[i]) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Tong = /d{s}\" ed\n    iid: sta(pri) => \"TB = /f{s / 5.0}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 6.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a[5]) => edt: sta(a = [3 ' 8 ' 2 ' 6 ' 1]) ed\n    iid: sta(int dem) => edt: sta(dem = 0) ed\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 0 ' i < 5 ' i++) {\n            iid: sta(bolean) => cdn,tf:\n                sta(a[i] % 2 == 0) {\n                    iid: sta(dem++) ed\n                }\n            bln ed\n        }\n    dbl ed\n    iid: sta(pri) => \"So phan tu chan: /d{dem}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 6.5", "c": "imp*ioprt.ed\nimp*str.ed\n\nsta(main){\n    iid: sta(str s) ed\n    iid: sta(ipt) => edt: sta(s) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(str.len(s) == 0) {\n            iid: sta(pri) => \"rong\" ed\n        }\n        sta(else) {\n            iid: sta(pri) => \"Do dai: /d{str.len(s)}\" ed\n        }\n    bln ed\n    iid: ref* 0 ed\n}", "i": "Sd++"}, {"t": "=Đáp án 7.1", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta lonnhat(int a ' int b) -> int {\n        iid: sta(int m) => edt: sta(m = a) ed\n        iid: sta(bolean) => cdn,tf:\n            sta(b > a) {\n                iid: sta(m = b) ed\n            }\n        bln ed\n        iid: ref* m ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(pri) => \"Lon nhat: /d{lonnhat(lonnhat(4 ' 9) ' 6)}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 7.2", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta lachinhphuong(int n) -> bool {\n        iid: sta(bool kq) => edt: sta(kq = false) ed\n        iid: sta(for) => cdn,chck:\n            dbl sta(int k = 1 ' k * k <= n ' k++) {\n                iid: sta(bolean) => cdn,tf:\n                    sta(k * k == n) {\n                        iid: sta(kq = true) ed\n                    }\n                bln ed\n            }\n        dbl ed\n        iid: ref* kq ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(for) => cdn,chck:\n        dbl sta(int i = 1 ' i <= 50 ' i++) {\n            iid: sta(bolean) => cdn,tf:\n                sta(lachinhphuong(i)) {\n                    iid: sta(pri) => \"/d{i}\" ed\n                }\n            bln ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 7.3", "c": "imp*ioprt.ed\nimp*str.ed\n\niid: sta(void) => unkw:\n    sta invach(int n) {\n        iid: sta(str s) ed\n        iid: sta(for) => cdn,chck:\n            dbl sta(int i = 0 ' i < n ' i++) {\n                iid: sta(s = str.concat(s ' \"-\")) ed\n            }\n        dbl ed\n        iid: sta(pri) => \"/s{s}\" ed\n    }\nvoid ed\n\nsta(main){\n    iid: call invach(10) ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 7.4", "c": "imp*ioprt.ed\n\niid: sta(fn) => rtn:\n    sta fib(int n) -> int {\n        iid: sta(bolean) => cdn,tf:\n            sta(n <= 1) {\n                iid: ref* n ed\n            }\n        bln ed\n        iid: ref* fib(n - 1) + fib(n - 2) ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(pri) => \"fib(10) = /d{fib(10)}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 8.1", "c": "imp*ioprt.ed\n\niid: sta(struct) => dta:\n    sta PhanSo { int tu ' int mau }\nstrt ed\n\niid: sta(fn) => rtn:\n    sta cong(PhanSo a ' PhanSo b) -> PhanSo {\n        iid: sta(PhanSo r) ed\n        iid: sta(r.tu = a.tu * b.mau + b.tu * a.mau) ed\n        iid: sta(r.mau = a.mau * b.mau) ed\n        iid: ref* r ed\n    }\nfn ed\n\nsta(main){\n    iid: sta(PhanSo x) ed\n    iid: sta(PhanSo y) ed\n    iid: sta(x.tu = 1) ed\n    iid: sta(x.mau = 2) ed\n    iid: sta(y.tu = 1) ed\n    iid: sta(y.mau = 3) ed\n    iid: sta(PhanSo z) => edt: sta(z = cong(x ' y)) ed\n    iid: sta(pri) => \"/d{z.tu} tren /d{z.mau}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 9.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int a) ed\n    iid: sta(int b) ed\n    iid: sta(ipt) => edt: sta(a) ed\n    iid: sta(ipt) => edt: sta(b) ed\n    iid: sta(bolean) => cdn,tf:\n        sta(b == 0) {\n            iid: sta(pri) => \"chia cho 0\" ed\n            iid: ref* 3 ed\n        }\n    bln ed\n    iid: sta(pri) => \"Thuong = /d{a / b}\" ed\n    iid: ref* 0 ed\n}", "i": "7\n0"}, {"t": "=Đáp án 9.4", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int n) => edt: sta(n = 10) ed\n    iid: sta(while) => cdn,edt:\n        dbl sta(n != 0) {\n            iid: sta(pri) => \"/d{n}\" ed\n            iid: sta(n = n - 1) ed\n        }\n    dbl ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 13.2", "c": "imp*ioprt.ed\n\nsta(main){\n    iid: sta(int score) => edt: sta(score = -15) ed\n    iid: sta(while) => cdn,edt:\n        dbl sta(score <= 0) {\n            iid: sta(pri) => \"Diem /d{score}, cong 30\" ed\n            iid: sta(score = score + 30) ed\n        }\n    dbl ed\n    iid: sta(pri) => \"Duyet diem thanh cong: /d{score}\" ed\n    iid: ref* 0 ed\n}", "i": ""}, {"t": "=Đáp án 15.1", "c": "imp*ioprt.ed\nimp*math.ed\n\nsta(main){\n    iid: sta(float a) ed\n    iid: sta(float b) ed\n    iid: sta(ipt) => edt: sta(a) ed\n    iid: sta(ipt) => edt: sta(b) ed\n    iid: sta(float c) => edt: sta(c = math.sqrt(a * a + b * b)) ed\n    iid: sta(pri) => \"Canh huyen = /f{c}\" ed\n    iid: ref* 0 ed\n}", "i": "3\n4"}, {"t": "Hello Sd++", "c": "ssta {\n    imp*ioprt.$\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            ids.pri: \"Chao mung ban den voi Sd++!\" $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Biến toàn cục và biến cục bộ", "c": "ssta {\n    imp*ioprt.$\n\n    ids.g: ten_may = \"May chu A\" ₫\n    ids.g: nhiet_do = -20 ₫\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            iptedt.int t = ids(nhiet_do).g $\n            ids.pri: \"May: /s{ids(ten_may).g}\" $\n            ids.pri: \"Nhiet do: /d{t}\" $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Đổi tên lệnh in thành in_ra", "c": "ssta {\n    imp*ioprt.$\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"in_ra\"\n    ]{\n        main: {\n            in_ra: \"Dung ten moi\" $\n            ids.pri: \"Dung ten day du\" $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Đọc và ghi qua con trỏ", "c": "ssta {\n    imp*ioprt.$\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            iptedt.int temp = 20 $\n            iptedt.ptr p = @temp $\n            *p = *p + 5 $\n            ids.pri: \"temp = /d{temp}\" $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Cấp phát, dùng và giải phóng", "c": "ssta {\n    imp*ioprt.$\n    imp*mem.$\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            iptedt.ptr h = sta.alloc(32) $\n            iid: sta(for) => cdn,chck:\n                dbl sta(int i = 0 ' i < 4 ' i++) {\n                    iid: sta(*(h + i) = i * i) ed\n                }\n            dbl ed\n            ids.pri: \"o thu 3 = /d{*(h + 3)}\" $\n            sta.free(h) $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Nhiệt độ âm tự cộng cho đến khi ổn định", "c": "ssta {\n    imp*ioprt.$\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            iptedt.int temp = -25 $\n            ids.pri: \"Nhiet do dau: /d{temp}\" $\n            ids sb(temp) {\n                block temp > 0:\n                    ids.pri: \"On dinh: /d{temp}\" $\n                    transf $\n                block temp < 0:\n                    ids.pri: \"Am (/d{temp}), dang suoi\" $\n                    temp = temp + 20 $\n                    $$\n                remaining:\n                    ids.pri: \"Bang 0, dua ve 1\" $\n                    temp = 1 $\n                    $$\n            } $\n            ref*0 $:\n        } $\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Tạo và dùng cờ chốt ¥", "c": "ssta {\n    imp*ioprt.$\n\n    defk<ids.end: text \"¥\"> {\n        init ids.edt (\"¥\" endlogic == \"$\"+\"€\"+\"$$\")\n        func * end.sta * end.iid #\n    }\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            init ¥\n            ids.pri: \"Dung chot tuy bien\" ¥\n            ref*0 ¥:\n        } ¥\n    } €\n}\n##", "i": "", "p": 1}, {"t": "Giám sát và tự chữa lành", "c": "ssta {\n    imp*ioprt.$\n    imp*mem.$\n\n    defk<ids.end: text \"¥\"> {\n        init ids.edt (\"¥\" endlogic == \"$\"+\"€\"+\"$$\")\n        func * end.sta * end.iid #\n    }\n\n    ids.g: cluster = \"Cloud-Cluster-Alpha\" ₫\n    ids.g: node_status = -100 ₫\n\n    define[\n        ids.edt: text = \"main\",\n        pri.edt: text = \"print\"\n    ]{\n        main: {\n            init ¥\n            iptedt.int status = ids(node_status).g ¥\n            iptedt.ptr p = @status ¥\n            ids.pri: \"== MONITOR: /s{ids(cluster).g} ==\" ¥\n            ids.pri: \"Trang thai ban dau: /d{status}\" ¥\n            ids sb(status) {\n                block status == 200:\n                    ids.pri: \"[ONLINE] 100% cong suat\" ¥\n                    transf $\n                block status < 0:\n                    ids.pri: \"[WARNING] su co (/d{status}), reset\" ¥\n                    *p = *p + 300 ¥\n                    $$\n                remaining:\n                    ids.pri: \"[RESET] dua ve 200\" ¥\n                    *p = 200 ¥\n                    $$\n            } ¥\n            iptedt.ptr log = sta.alloc(16) $\n            *log = status $\n            ids.pri: \"Ghi nhat ky: /d{*log}\" $\n            sta.free(log) $\n            ref*0 ¥:\n        } ¥\n    } €\n}\n##", "i": "", "p": 1}];
+var $=function(s){return document.querySelector(s)};
+var ta=$('#code'),hi=$('#hi'),gi=$('#gi'),gut=$('#gut'),stdin=$('#stdin');
+var STORE='sd-ide-v1';
+var state={files:[],active:0,fs:13};
+var errLine=0,problems=[],lastRun=null;
+
+function lsGet(){try{return JSON.parse(localStorage.getItem(STORE)||'null')}catch(e){return null}}
+var saveT=null;
+function lsSet(){clearTimeout(saveT);saveT=setTimeout(function(){try{localStorage.setItem(STORE,JSON.stringify(state))}catch(e){}},400)}
+function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('on')},1800)}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ---------- tô màu ---------- */
+var CL=Object.create(null);
+'iid sta ed dbl bln strt imp* ref* call brk nxt'.split(' ').forEach(function(w){CL[w]='k'});
+'cdn chck edt tf dta unkw rtn pri ipt main'.split(' ').forEach(function(w){CL[w]='t'});
+'int float str bool struct void fn bolean for while else math file'.split(' ').forEach(function(w){CL[w]='y'});
+'and or not'.split(' ').forEach(function(w){CL[w]='o'});
+'ssta define defk init block remaining transf break ids sb'.split(' ').forEach(function(w){CL[w]='k'});
+'iptedt end endlogic func text edt'.split(' ').forEach(function(w){CL[w]='t'});
+'ptr arr'.split(' ').forEach(function(w){CL[w]='y'});
+'alloc free memset time sleep rect'.split(' ').forEach(function(w){CL[w]='t'});
+'true false'.split(' ').forEach(function(w){CL[w]='n'});
+function sp(c,t){return '<span class="'+c+'">'+esc(t)+'</span>'}
+function strHl(t){
+  var parts=t.split(/(\/[sdfb]\d?\{|\/\/)/),o='';
+  for(var i=0;i<parts.length;i++)o+=(i%2)?sp('p',parts[i]):esc(parts[i]);
+  return '<span class="s">'+o+'</span>';
+}
+function hlAll(text){
+  var lines=text.split('\n'),inC=false,out='';
+  for(var li=0;li<lines.length;li++){
+    var line=lines[li],i=0,o='';
+    while(i<line.length){
+      if(inC){var j=line.indexOf('\\\\',i);if(j<0){o+=sp('c',line.slice(i));i=line.length}else{o+=sp('c',line.slice(i,j+2));i=j+2;inC=false}continue}
+      var ch=line[i];
+      if(ch==='\\'&&line[i+1]==='\\'){var j2=line.indexOf('\\\\',i+2);if(j2<0){o+=sp('c',line.slice(i));inC=true;i=line.length}else{o+=sp('c',line.slice(i,j2+2));i=j2+2}continue}
+      if(ch==='*'&&line[i+1]==='/'){o+=sp('c',line.slice(i));i=line.length;continue}
+      if('$₫€#@¥¤'.indexOf(ch)>=0){var jf=i;while(line[jf]===ch)jf++;o+=sp('fl',line.slice(i,jf));i=jf;continue}
+      if(ch==='"'){var q=line.indexOf('"',i+1),e=q<0?line.length:q+1;o+=strHl(line.slice(i,e));i=e;continue}
+      var m;
+      if(/\d/.test(ch)){m=/^\d+(\.\d+)?/.exec(line.slice(i));o+=sp('n',m[0]);i+=m[0].length;continue}
+      if(/[A-Za-z_]/.test(ch)){
+        m=/^[A-Za-z_]\w*/.exec(line.slice(i));var w=m[0];
+        if((w==='imp'||w==='ref')&&line[i+w.length]==='*')w+='*';
+        o+=CL[w]?sp(CL[w],w):esc(w);i+=w.length;continue}
+      o+=esc(ch);i++;
+    }
+    var cls='l'+(li+1===errLine?' er':'')+(li+1===curLine?' cu':'')+(li+1===dbgLine?' dbg':'');
+    out+='<div class="'+cls+'">'+o+'</div>';
+  }
+  return out;
+}
+var curLine=1,dbgLine=0;
+function render(){
+  hi.innerHTML=hlAll(ta.value);
+  var n=ta.value.split('\n').length,g='',bpl={};((cur()&&cur().bp)||[]).forEach(function(x){bpl[x]=1});
+  for(var i=1;i<=n;i++)g+='<div data-l="'+i+'" class="'+(i===errLine?'er':'')+(i===curLine?' cu':'')+(bpl[i]?' bp':'')+(i===dbgLine?' dbg':'')+'">'+i+'</div>';
+  gi.innerHTML=g;sync();
+}
+function sync(){
+  var t='translate('+(-ta.scrollLeft)+'px,'+(-ta.scrollTop)+'px)';
+  hi.style.transform=t;gi.style.transform='translateY('+(-ta.scrollTop)+'px)';
+}
+ta.addEventListener('scroll',sync);
+
+/* ---------- tệp & tab ---------- */
+function cur(){return state.files[state.active]}
+function newFile(name,text,input){
+  state.files.push({name:name||('bai-'+(state.files.length+1)+'.sd'),text:text||'',input:input||''});
+  switchTo(state.files.length-1);
+}
+function uniq(base){var n=base,k=2;while(state.files.some(function(f){return f.name===n}))n=base.replace(/(\.\w+)?$/,'-'+(k++)+'$1');return n}
+function switchTo(i){
+  stopDebug(false);
+  if(state.files[state.active])commit();
+  state.active=i;var f=cur();ta.value=f.text;loadStdin();
+  errLine=0;drawTabs();render();cursorInfo();liveCheck();lsSet();
+}
+function modKey(n){return n.replace(/\.(sdpp|sd|txt)$/i,'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^\w]/g,'_')}
+function mainFile(){if(!state.main)return null;for(var i=0;i<state.files.length;i++)if(state.files[i].name===state.main)return state.files[i];return null}
+function inputOwner(){return mainFile()||cur()}
+function commit(){var f=cur();if(f)f.text=ta.value;var o=inputOwner();if(o)o.input=stdin.value}
+function loadStdin(){
+  var o=inputOwner();stdin.value=(o&&o.input)||'';
+  var mf=mainFile(),h=$('#inhint');
+  h.textContent=(mf&&mf!==cur())?'Đây là dữ liệu nhập của tệp chính ('+mf.name+'). Mỗi lệnh ipt đọc một dòng.':'Mỗi lệnh ipt đọc một dòng từ ô này. Hết dòng điền sẵn, chương trình dừng và hỏi bạn ngay ở tab Đầu ra.';
+}
+function loader(name){var k=modKey(name);for(var i=0;i<state.files.length;i++)if(modKey(state.files[i].name)===k)return state.files[i].text;return null}
+function fileByKey(k){for(var i=0;i<state.files.length;i++)if(modKey(state.files[i].name)===k)return i;return -1}
+function projCtx(){commit();var f=mainFile()||cur();return {f:f,opts:{load:loader,entry:modKey(f.name)}}}
+var lastRunName='';
+function viewFile(i){if(i===state.active)return;commit();state.active=i;ta.value=state.files[i].text;errLine=0;loadStdin();drawTabs();render();cursorInfo()}
+function focusFile(key,line){
+  var i=key?fileByKey(key):-1;if(!key){for(var k=0;k<state.files.length;k++)if(state.files[k].name===lastRunName)i=k}
+  if(i>=0&&i!==state.active){if(dbg)viewFile(i);else switchTo(i)}
+  goTo(line);errLine=line;render();
+}
+function bpSet(){var b=new Set();state.files.forEach(function(f){(f.bp||[]).forEach(function(l){b.add((f===dbgEntry?'':modKey(f.name))+':'+l)})});return b}
+var dbgEntry=null;
+var armed=-1;
+function drawTabs(){
+  var h='';
+  state.files.forEach(function(f,i){
+    h+='<div class="tab'+(i===state.active?' on':'')+'" data-i="'+i+'" tabindex="0" role="button" title="Nhấp đúp để đổi tên"><span class="nm">'+(f.name===state.main?'★ ':'')+esc(f.name)+'</span><button class="x'+(armed===i?' arm':'')+'" data-x="'+i+'" aria-label="Đóng '+esc(f.name)+'">'+(armed===i?'Đóng?':'×')+'</button></div>';
+  });
+  h+='<div class="tab add" id="add" tabindex="0" role="button" aria-label="Tệp mới">+</div>';
+  $('#tabs').innerHTML=h;
+}
+$('#tabs').addEventListener('click',function(e){
+  var x=e.target.closest('[data-x]');
+  if(x){
+    var i=+x.getAttribute('data-x');
+    if(state.files[i].text.trim()&&armed!==i){armed=i;drawTabs();clearTimeout(armed.t);setTimeout(function(){armed=-1;drawTabs()},2500);return}
+    armed=-1;commit();state.files.splice(i,1);
+    if(!state.files.length)state.files.push({name:'bai1.sd',text:'',input:''});
+    state.active=Math.max(0,Math.min(i<=state.active?state.active-1:state.active,state.files.length-1));
+    if(state.main&&!mainFile())state.main='';var f=cur();ta.value=f.text;loadStdin();drawTabs();render();liveCheck();lsSet();return;
+  }
+  if(e.target.closest('#add')){newFile(uniq('bai'+(state.files.length+1)+'.sd'),'');ta.focus();return}
+  var t=e.target.closest('.tab');if(t&&!e.target.closest('input')){var k=+t.getAttribute('data-i');if(k!==state.active)switchTo(k)}
+});
+$('#tabs').addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('tab')){e.preventDefault();e.target.click()}});
+$('#tabs').addEventListener('dblclick',function(e){
+  var t=e.target.closest('.tab[data-i]');if(!t)return;
+  var i=+t.getAttribute('data-i'),nm=t.querySelector('.nm'),inp=document.createElement('input');
+  inp.value=state.files[i].name;nm.replaceWith(inp);inp.focus();inp.select();
+  var done=false;function fin(ok){if(done)return;done=true;if(ok&&inp.value.trim()){if(state.main===state.files[i].name)state.main=inp.value.trim();state.files[i].name=inp.value.trim()}drawTabs();lsSet()}
+  inp.addEventListener('keydown',function(ev){if(ev.key==='Enter')fin(true);if(ev.key==='Escape')fin(false)});
+  inp.addEventListener('blur',function(){fin(true)});
+});
+
+/* ---------- ví dụ & mẫu ---------- */
+function clean(t){return t.replace(/\\sd\|([^|]*)\|/g,'$1')}
+(function(){
+  var sel=$('#ex'),a='',b='',c2='';
+  CASES.forEach(function(c,i){var o='<option value="'+i+'">'+esc(clean(c.t.replace(/^=/,'')))+'</option>';if(c.t[0]==='=')c2+=o;else if(c.p)b+=o;else a+=o});
+  sel.innerHTML='<option value="">Ví dụ giáo trình…</option><optgroup label="Sd 2: ví dụ trong sách">'+a+'</optgroup><optgroup label="Sd++: ví dụ trong sách">'+b+'</optgroup><optgroup label="Sd 2: đáp án bài tập">'+c2+'</optgroup>';
+  sel.addEventListener('change',function(){
+    if(sel.value==='')return;var c=CASES[+sel.value];sel.value='';
+    newFile(uniq((clean(c.t.replace(/^=/,'')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'vi_du')+(c.p?'.sdpp':'.sd')),c.c,c.i);
+    run();
+  });
+})();
+var SN=[
+ ['Khung chương trình','sta(main){\n    ¦\n    iid: ref* 0 ed\n}'],
+ ['In ra màn hình','iid: sta(pri) => "¦" ed'],
+ ['Khai báo biến','iid: sta(int ¦x) => edt: sta(x = 0) ed'],
+ ['Đọc dữ liệu nhập','iid: sta(ipt) => edt: sta(¦x) ed'],
+ ['Rẽ nhánh (if / else)','iid: sta(bolean) => cdn,tf:\n    sta(¦điều_kiện) {\n        \n    }\n    sta(else) {\n        \n    }\nbln ed'],
+ ['Vòng lặp for','iid: sta(for) => cdn,chck:\n    dbl sta(int i = 0 \' i < ¦n \' i++) {\n        \n    }\ndbl ed'],
+ ['Vòng lặp while','iid: sta(while) => cdn,edt:\n    dbl sta(¦điều_kiện) {\n        \n    }\ndbl ed'],
+ ['Hàm có giá trị trả về','iid: sta(fn) => rtn:\n    sta ¦tenham(int a \' int b) -> int {\n        iid: ref* a + b ed\n    }\nfn ed'],
+ ['Thủ tục (void)','iid: sta(void) => unkw:\n    sta ¦tenthutuc(str ten) {\n        iid: sta(pri) => "Xin chao, /s{ten}!" ed\n    }\nvoid ed'],
+ ['Cấu trúc (struct)','iid: sta(struct) => dta:\n    sta ¦SinhVien { str ten \' int tuoi \' float diem }\nstrt ed'],
+ ['Ghi chú','\\\\ ¦ghi chú \\\\'],
+ ['Sd++: khung chương trình','ssta {\n    imp*ioprt.$\n\n    define[\n        ids.edt: text = "main",\n        pri.edt: text = "print"\n    ]{\n        main: {\n            ¦\n            ref*0 $:\n        } $\n    } €\n}\n##'],
+ ['Sd++: biến toàn cục','ids.g: ¦ten = 0 ₫'],
+ ['Sd++: in ra','ids.pri: "¦" $'],
+ ['Sd++: khai báo biến','iptedt.int ¦x = 0 $'],
+ ['Sd++: con trỏ','iptedt.ptr ¦p = @x $\n*p = *p + 1 $'],
+ ['Sd++: cấp phát Heap','iptedt.ptr ¦h = sta.alloc(32) $\n*h = 0 $\nsta.free(h) $'],
+ ['Sd++: khối ids sb','ids sb(¦x) {\n    block x > 0:\n        transf $\n    block x < 0:\n        x = x + 1 $\n        $$\n    remaining:\n        break $\n} $'],
+ ['Sd++: cờ chốt defk','defk<ids.end: text "¥"> {\n    init ids.edt ("¥" endlogic == "$"+"€"+"$$")\n    func * end.sta * end.iid #\n}']
+];
+(function(){
+  var s=$('#snip'),h='<option value="">Chèn mẫu…</option>';
+  SN.forEach(function(x,i){h+='<option value="'+i+'">'+esc(x[0])+'</option>'});
+  s.innerHTML=h;
+  s.addEventListener('change',function(){
+    if(s.value==='')return;var x=SN[+s.value];s.value='';
+    var st=ta.selectionStart,ls=ta.value.lastIndexOf('\n',st-1)+1,ind=/^ */.exec(ta.value.slice(ls))[0];
+    var txt=x[1].split('\n').map(function(l,i){return i?ind+l:l}).join('\n'),pos=txt.indexOf('¦');
+    txt=txt.replace('¦','');ta.focus();ins(txt);
+    if(pos>=0){var p=st+pos;ta.setSelectionRange(p,p)}
+    afterEdit();
+  });
+})();
+
+/* ---------- soạn thảo ---------- */
+function ins(txt){
+  var ok=false;try{ok=document.execCommand('insertText',false,txt)}catch(e){}
+  if(!ok){ta.setRangeText(txt,ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}
+}
+function afterEdit(){var f=cur(),nl=ta.value.split('\n').length;if(f&&f.bp)f.bp=f.bp.filter(function(x){return x<=nl});errLine=0;render();cursorInfo();debLive();commit();lsSet()}
+ta.addEventListener('input',afterEdit);
+stdin.addEventListener('input',function(){commit();lsSet()});
+function cursorInfo(){
+  var p=ta.selectionStart,before=ta.value.slice(0,p),ln=before.split('\n').length,col=p-before.lastIndexOf('\n');
+  $('#st-pos').textContent='Dòng '+ln+', cột '+col;
+  if(ln!==curLine){curLine=ln;render()}
+}
+['keyup','click','focus'].forEach(function(ev){ta.addEventListener(ev,cursorInfo)});
+ta.addEventListener('keydown',function(e){
+  var mod=e.ctrlKey||e.metaKey;
+  if(mod&&e.key==='Enter'){e.preventDefault();run();return}
+  if(mod&&e.key.toLowerCase()==='s'){e.preventDefault();saveFile(e.shiftKey);return}
+  if(mod&&e.key.toLowerCase()==='o'){e.preventDefault();openFile();return}
+  if(mod&&e.shiftKey&&e.key.toLowerCase()==='f'){e.preventDefault();format();return}
+  if(e.key==='Tab'){
+    e.preventDefault();
+    var s=ta.selectionStart,en=ta.selectionEnd,v=ta.value;
+    if(s===en&&!e.shiftKey){ins('    ');return}
+    var a=v.lastIndexOf('\n',s-1)+1,blk=v.slice(a,en),nb;
+    nb=blk.split('\n').map(function(l){return e.shiftKey?l.replace(/^( {1,4}|\t)/,''):'    '+l}).join('\n');
+    ta.setSelectionRange(a,en);ins(nb);ta.setSelectionRange(a,a+nb.length);return;
+  }
+  if(e.key==='Enter'&&!mod){
+    e.preventDefault();
+    var p=ta.selectionStart,v2=ta.value,ls=v2.lastIndexOf('\n',p-1)+1,line=v2.slice(ls,p),ind=/^ */.exec(line)[0];
+    var code=line.replace(/\\\\.*?\\\\/g,'').replace(/\s\*\/.*$/,'').trim();
+    if(/[\{\[]$/.test(code)||/^(block\s.+|remaining):$/.test(code)||/^iid: sta\((bolean|for|while|struct|fn|void)\) => [\w,]+:$/.test(code))ind+='    ';
+    ins('\n'+ind);
+  }
+});
+$('#gi').addEventListener('click',function(e){
+  var d=e.target.closest('[data-l]');if(!d)return;var n=+d.getAttribute('data-l'),f=cur();f.bp=f.bp||[];
+  var k=f.bp.indexOf(n);if(k<0)f.bp.push(n);else f.bp.splice(k,1);render();lsSet();
+});
+function goTo(n){
+  var L=ta.value.split('\n'),p=0;for(var i=0;i<n-1&&i<L.length;i++)p+=L[i].length+1;
+  ta.focus();ta.setSelectionRange(p,p+(L[n-1]||'').length);
+  var lh=parseFloat(getComputedStyle(ta).lineHeight)||20;
+  var y=(n-1)*lh;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-lh*3)ta.scrollTop=Math.max(0,y-ta.clientHeight/3);
+  cursorInfo();sync();
+}
+
+/* ---------- căn lề ---------- */
+function format(){
+  var L=ta.value.split('\n'),lv=0,inC=false,out=[],stk=[];
+  var CLOSE={'dbl ed':1,'bln ed':1,'strt ed':1,'void ed':1,'fn ed':1};
+  var HEAD=/^iid: sta\((bolean|for|while|struct|fn|void)\) => [\w,]+:$/;
+  var dec=function(){lv=Math.max(0,lv-1)};
+  L.forEach(function(raw){
+    var startC=inC,cnt=(raw.replace(/"[^"]*"/g,'').match(/\\\\/g)||[]).length;
+    if(cnt%2)inC=!inC;
+    if(startC){out.push(raw.replace(/\s+$/,''));return}
+    var t=raw.trim();if(!t){out.push('');return}
+    var c=t.replace(/\\\\.*?\\\\/g,'').replace(/^\*\/.*$/,'').replace(/\s\*\/.*$/,'').trim();
+    var br=/^(block\s.+|remaining):$/.test(c),top=stk.length?stk[stk.length-1]:false;
+    if(br){if(top)dec()}
+    else if(/^[}\]]/.test(c)){if(top)dec();if(/^\}/.test(c))stk.pop();dec()}
+    else if(CLOSE[c])dec();
+    out.push('    '.repeat(lv)+t);
+    if(br){lv++;if(stk.length)stk[stk.length-1]=true}
+    else if(/[{\[]$/.test(c)){lv++;if(/\{$/.test(c))stk.push(false)}
+    else if(HEAD.test(c))lv++;
+  });
+  var nv=out.join('\n');if(nv===ta.value){toast('Đã căn lề sẵn');return}
+  var p=ta.selectionStart;ta.focus();ta.select();ins(nv);ta.setSelectionRange(Math.min(p,nv.length),Math.min(p,nv.length));afterEdit();toast('Đã căn lề');
+}
+$('#fmt').addEventListener('click',format);
+
+/* ---------- chẩn đoán trực tiếp ---------- */
+var liveT=null;
+function debLive(){clearTimeout(liveT);liveT=setTimeout(liveCheck,350)}
+function liveCheck(){
+  var r=checkAll(ta.value,{load:loader,entry:modKey(cur().name)}),f=r.fault,ws=r.warnings||[];problems=f?[f]:[];
+  var cnt=problems.length+ws.length,bd=$('#bd');bd.textContent=cnt;bd.className='bd'+(f?'':(ws.length?' w':' ok'));
+  $('#st-pr').textContent=cnt?(problems.length?problems.length+' lỗi':'')+(problems.length&&ws.length?', ':'')+(ws.length?ws.length+' cảnh báo':''):'Không có vấn đề';
+  $('#st-lang').textContent=/^\s*ssta\s*\{/m.test(ta.value)?'Sd++':'Sd 2';
+  var h='';
+  if(!cnt)h='<p class="empty">Không phát hiện lỗi cú pháp. Chạy chương trình để bắt lỗi khi thực thi (chia cho 0, chỉ số mảng, con trỏ rỗng, thiếu dữ liệu nhập).</p>';
+  var row=function(p,w){return '<button class="prob'+(w?' w':'')+'" data-l="'+p.line+'" data-f="'+(p.file||'')+'"><span class="cd">'+p.code+'</span><span><span class="ln">'+(p.file?'tệp '+esc(p.file)+', ':'')+'dòng '+p.line+'</span><br>'+esc(p.msg)+'</span></button>'};
+  problems.forEach(function(p){h+=row(p,false)});ws.forEach(function(p){h+=row(p,true)});
+  $('#p-pr').innerHTML=h;
+  if(f&&f.line&&!f.file){if(errLine!==f.line){errLine=f.line;render()}}else if(errLine){errLine=0;render()}
+}
+$('#p-pr').addEventListener('click',function(e){var b=e.target.closest('[data-l]');if(!b||!+b.getAttribute('data-l'))return;var fk=b.getAttribute('data-f');if(fk)focusFile(fk,+b.getAttribute('data-l'));else goTo(+b.getAttribute('data-l'))});
+
+/* ---------- chạy ---------- */
+function panel(n){
+  document.querySelectorAll('.pt').forEach(function(b){var on=b.getAttribute('data-p')===n;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  ['out','in','pr','rf','vr'].forEach(function(k){$('#p-'+k).hidden=(k!==n)});
+}
+document.querySelector('.ptabs').addEventListener('click',function(e){var b=e.target.closest('.pt');if(b)panel(b.getAttribute('data-p'))});
+var dbg=null,lastMode='in';
+/* hiển thị kết quả: out = văn bản đầu ra; st = {fault, rc, ms, waiting} */
+function paint(out,st){
+  var flt=$('#flt'),res=$('#res');flt.innerHTML='';
+  $('#out').textContent=out;
+  var f=st.fault;
+  if(f){
+    res.innerHTML='<span class="bad">Dừng vì lỗi '+f.code+'</span>'+(st.ms!=null?'<span>'+st.ms+' ms</span>':'');
+    var b=document.createElement('button');b.className='flt';
+    b.innerHTML='<b>['+f.code+']</b>'+(f.file?' tệp '+esc(f.file)+',':'')+(f.line?' dòng '+f.line+':':'')+' '+esc(f.msg);
+    if(f.line)b.addEventListener('click',function(){focusFile(f.file||null,f.line)});
+    flt.appendChild(b);
+    if(f.line&&!f.file&&cur().name===lastRunName){errLine=f.line;render()}
+    $('#st-run').textContent='Lỗi '+f.code+(st.ms!=null?' · '+st.ms+' ms':'');
+  }else if(st.waiting){
+    res.innerHTML='<span class="bad" style="color:var(--warn)">Đang chờ dữ liệu nhập</span>';
+    $('#st-run').textContent='Chờ nhập liệu';
+  }else if(st.rc!=null&&!st.running){
+    res.innerHTML='<span class="ok">Thoát với mã '+st.rc+'</span>'+(st.ms!=null?'<span>'+st.ms+' ms</span>':'');
+    $('#st-run').textContent='Thoát '+st.rc+(st.ms!=null?' · '+st.ms+' ms':'');
+    if(!out)$('#out').innerHTML='<span class="empty">(chương trình không in gì)</span>';
+  }else{res.innerHTML='<span>Đang gỡ lỗi</span>'}
+  var wl=$('#wrn');wl.innerHTML='';
+  (st.warnings||[]).forEach(function(w){var b=document.createElement('button');b.textContent='['+w.code+']'+(w.file?' tệp '+w.file+',':'')+' dòng '+w.line+': '+w.msg;b.addEventListener('click',function(){if(w.file)focusFile(w.file,w.line);else goTo(w.line)});wl.appendChild(b)});
+  var ir=$('#inrow');ir.hidden=!st.waiting;
+  if(st.waiting){var bx=$('#inbox');bx.value='';setTimeout(function(){bx.focus()},0)}
+}
+function run(){
+  stopDebug(false);var c=projCtx();lastRunName=c.f.name;c.opts.interactive=true;
+  var r=runSource(c.f.text,c.f.input,c.opts);lastRun=r;
+  panel('out');paint(r.out,{fault:r.fault,rc:r.rc,ms:r.ms,waiting:!!r.needInput,warnings:r.warnings});
+}
+$('#inrow').addEventListener('submit',function(e){
+  e.preventDefault();var t=$('#inbox').value;
+  if(dbg&&dbg.waiting){dbg.next(t);if(lastMode==='go')dbg.go('go',bpSet());dbgAfter();return}
+  var v=stdin.value;if(v&&!/\n$/.test(v))v+='\n';stdin.value=v+t+'\n';commit();lsSet();run();
+});
+
+/* ---------- gỡ lỗi ---------- */
+function scrollToLine(n){
+  var lh=parseFloat(getComputedStyle(ta).lineHeight)||20,y=(n-1)*lh;
+  if(y<ta.scrollTop+lh||y>ta.scrollTop+ta.clientHeight-lh*3)ta.scrollTop=Math.max(0,y-ta.clientHeight/3);
+  sync();
+}
+function varsPane(){
+  var d=dbg,h='';
+  if(!d||!d.pos){$('#p-vr').innerHTML='<p class="empty">Không có phiên gỡ lỗi đang chạy.</p>';return}
+  h+='<h4 class="ref" style="margin:0 0 4px;font:600 12px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)">Ngăn xếp gọi hàm</h4><ul class="stk"><li>main</li>';
+  d.pos.stack.forEach(function(x){h+='<li>'+esc(x)+'</li>'});h+='</ul>';
+  var rows=d.vars();
+  h+=rows.length?'<table class="vt"><thead><tr><th>Biến</th><th>Kiểu</th><th>Giá trị</th></tr></thead><tbody>'+rows.map(function(r){return '<tr><td>'+esc(r[0])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[1])+'</td></tr>'}).join('')+'</tbody></table>':'<p class="empty">Chưa có biến nào trong phạm vi này.</p>';
+  $('#p-vr').innerHTML=h;
+}
+function dbgAfter(){
+  var d=dbg;if(!d)return;
+  dbgLine=d.pos?d.pos.line:0;
+  if(d.pos){var tg=d.pos.file?fileByKey(d.pos.file):state.files.indexOf(dbgEntry);if(tg>=0)viewFile(tg)}
+  if(d.done){
+    var st={fault:d.fault,rc:d.rc,waiting:false,warnings:d.warnings};panel('out');paint(d.out,st);
+    var keep=d.out;stopDebug(true);return;
+  }
+  $('#dlbl').textContent=d.waiting?'Đang chờ nhập liệu':'Đang gỡ lỗi · dòng '+dbgLine;
+  render();if(dbgLine)scrollToLine(dbgLine);varsPane();
+  var st2={waiting:d.waiting,running:true};
+  if(d.waiting){panel('out')}else if($('#p-vr').hidden&&$('#p-out').hidden===false){}
+  paint(d.out,st2);
+  $('#st-run').textContent=d.waiting?'Chờ nhập liệu':'Tạm dừng ở dòng '+dbgLine;
+}
+function startDebug(){
+  stopDebug(false);var c=projCtx();lastRunName=c.f.name;
+  var d=createDebug(c.f.text,c.f.input,null,c.opts);
+  if(d.fault){panel('out');paint('',{fault:d.fault,rc:255});liveCheck();return}
+  dbg=d;dbgEntry=c.f;viewFile(state.files.indexOf(c.f));lastMode='in';ta.readOnly=true;$('#dbar').hidden=false;$('#dbg').disabled=true;
+  panel('vr');dbgAfter();
+}
+function stopDebug(keep){
+  if(!dbg&&!dbgLine&&$('#dbar').hidden)return;
+  dbg=null;dbgLine=0;ta.readOnly=false;$('#dbar').hidden=true;$('#dbg').disabled=false;
+  if(!keep){$('#inrow').hidden=true}
+  render();
+}
+function dbgCmd(m){
+  if(m==='stop'){stopDebug(false);$('#st-run').textContent='Đã dừng gỡ lỗi';return}
+  if(!dbg||dbg.done||dbg.waiting)return;
+  lastMode=m;dbg.go(m,bpSet());dbgAfter();
+}
+$('#dbar').addEventListener('click',function(e){var b=e.target.closest('[data-d]');if(b)dbgCmd(b.getAttribute('data-d'))});
+$('#dbg').addEventListener('click',startDebug);
+document.addEventListener('keydown',function(e){
+  if(e.key==='F9'){e.preventDefault();startDebug();return}
+  if(!dbg)return;
+  if(e.key==='F5'){e.preventDefault();dbgCmd(e.shiftKey?'stop':'go')}
+  else if(e.key==='F10'){e.preventDefault();dbgCmd('over')}
+  else if(e.key==='F11'){e.preventDefault();dbgCmd(e.shiftKey?'out':'in')}
+});
+$('#run').addEventListener('click',run);
+
+/* ---------- tệp, sao chép, cỡ chữ ---------- */
+var HANDLES=new WeakMap();
+function openFile(){
+  if(window.showOpenFilePicker){
+    window.showOpenFilePicker({types:[{description:'Mã Sd',accept:{'text/plain':['.sd','.sdpp','.txt']}}]}).then(function(h){
+      return h[0].getFile().then(function(f){return f.text().then(function(t){newFile(uniq(f.name),t.replace(/\r\n?/g,'\n'),'');HANDLES.set(cur(),h[0]);toast('Đã mở '+f.name)})});
+    }).catch(function(e){if(e&&e.name!=='AbortError')$('#file').click()});
+  }else $('#file').click();
+}
+function download(f){
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([f.text],{type:'text/plain;charset=utf-8'}));a.download=f.name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},2000);toast('Đã tải '+f.name+' xuống');
+}
+function saveFile(as){
+  commit();var f=cur(),h=HANDLES.get(f);
+  function w(hd){return hd.createWritable().then(function(ws){return ws.write(f.text).then(function(){return ws.close()})}).then(function(){toast('Đã lưu '+f.name)})}
+  if(h&&!as){w(h).catch(function(){toast('Không ghi được tệp')});return}
+  if(window.showSaveFilePicker){
+    window.showSaveFilePicker({suggestedName:f.name,types:[{description:'Mã Sd',accept:{'text/plain':['.sd','.sdpp']}}]}).then(function(hd){
+      HANDLES.set(f,hd);if(hd.name){f.name=hd.name;drawTabs();lsSet()}return w(hd);
+    }).catch(function(e){if(e&&e.name!=='AbortError')download(f)});
+  }else download(f);
+}
+$('#open').addEventListener('click',openFile);
+$('#save').addEventListener('click',function(){saveFile(false)});
+$('#saveas').addEventListener('click',function(){saveFile(true)});
+function readFile(f){
+  var r=new FileReader();r.onload=function(){newFile(uniq(f.name),String(r.result).replace(/\r\n?/g,'\n'),'');toast('Đã mở '+f.name)};r.readAsText(f);
+}
+function openDir(){
+  if(!window.showDirectoryPicker){toast('Trình duyệt này chưa mở được thư mục. Hãy chọn nhiều tệp cùng lúc.');$('#file').click();return}
+  window.showDirectoryPicker().then(async function(dir){
+    var items=[];
+    for await(var ent of dir.entries()){
+      var nm=ent[0],h=ent[1];
+      if(h.kind==='file'&&/\.(sd|sdpp)$/i.test(nm)){var fl=await h.getFile();items.push({nm:nm,h:h,t:(await fl.text()).replace(/\r\n?/g,'\n')})}
+    }
+    items.sort(function(a,b){return a.nm<b.nm?-1:1});
+    if(!items.length){toast('Thư mục không có tệp .sd hoặc .sdpp');return}
+    commit();var first=state.files.length;
+    items.forEach(function(it){var f={name:uniq(it.nm),text:it.t,input:''};state.files.push(f);HANDLES.set(f,it.h)});
+    var mi=-1;items.forEach(function(it,k){if(mi<0&&/^(main|chinh)\.(sd|sdpp)$/i.test(it.nm))mi=k});
+    if(mi>=0)state.main=state.files[first+mi].name;
+    switchTo(first+(mi>=0?mi:0));toast('Đã mở '+items.length+' tệp từ thư mục');
+  }).catch(function(e){if(e&&e.name!=='AbortError')toast('Không mở được thư mục')});
+}
+$('#opendir').addEventListener('click',openDir);
+$('#setmain').addEventListener('click',function(){
+  commit();var f=cur();state.main=(state.main===f.name)?'':f.name;loadStdin();drawTabs();lsSet();
+  toast(state.main?'Chạy và Gỡ lỗi sẽ luôn dùng '+f.name:'Đã bỏ tệp chính, Chạy dùng tệp đang mở');
+});
+$('#file').addEventListener('change',function(e){Array.prototype.forEach.call(e.target.files,readFile);e.target.value=''});
+['dragover','drop'].forEach(function(ev){$('.ed').addEventListener(ev,function(e){
+  if(!e.dataTransfer||!e.dataTransfer.files||!e.dataTransfer.files.length)return;
+  e.preventDefault();if(ev==='drop')readFile(e.dataTransfer.files[0]);
+})});
+$('#copy').addEventListener('click',function(){
+  var t=ta.value;
+  function fb(){ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}toast(ok?'Đã sao chép mã':'Đã chọn toàn bộ mã, nhấn Ctrl+C')}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('Đã sao chép mã')},fb);else fb();
+});
+function setFs(n){state.fs=Math.max(10,Math.min(22,n));document.documentElement.style.setProperty('--fs',state.fs+'px');sync();lsSet()}
+$('#fm').addEventListener('click',function(){setFs(state.fs-1)});
+$('#fp').addEventListener('click',function(){setFs(state.fs+1)});
+
+/* ---------- tra cứu ---------- */
+$('#p-rf').innerHTML=[
+['Khung chương trình','imp*ioprt.ed\n\nsta(main){\n    iid: sta(pri) => "Xin chao" ed\n    iid: ref* 0 ed\n}'],
+['Lệnh một dòng','iid: sta(int a) => edt: sta(a = 5) ed\niid: sta(a = a + 1) ed\niid: sta(a++) ed\niid: sta(ipt) => edt: sta(a) ed\niid: sta(pri) => "a = /d{a}" ed\niid: call tenham(1 \' 2) ed'],
+['Chỗ giữ chỗ trong chuỗi','/s{chuỗi}  /d{số nguyên}  /f{x}  /f3{x}  /b{bool}  //'],
+['Khối lệnh và chốt đóng','for     cdn,chck   dbl sta(init \' đk \' bước) {…}   dbl ed\nwhile   cdn,edt    dbl sta(đk) {…}                  dbl ed\nif      cdn,tf     sta(đk) {…} sta(else) {…}        bln ed\nstruct  dta        sta Ten { kiểu tên \' … }         strt ed\nvoid    unkw       sta ten(kiểu tên) {…}            void ed\nfn      rtn        sta ten(…) -> kiểu {…}           fn ed'],
+['Khác','Kiểu: int float str bool   Mảng: int a[5]  a = [1 \' 2]\nToán tử: + - * / % == != < <= > >= and or not\nThư viện: math.abs/sqrt/pow/max/min  str.len/upper/lower/concat\n          file.write(đường dẫn \' chuỗi)  file.read(đường dẫn)\nGhi chú: \\\\ …nhiều dòng… \\\\    Thoát: iid: ref* mã ed'],
+['Sd++ (bọc trong ssta { … } ##)','ssta {\n    ids.g: ten = 5 ₫\n    define[\n        ids.edt: text = "main",\n        pri.edt: text = "in_ra"\n    ]{\n        main: {\n            iptedt.int a = ids(ten).g $\n            in_ra: "a = /d{a}" $\n            ref*0 $:\n        } $\n    } €\n}\n##'],
+['Sd++: con trỏ và Heap','@x địa chỉ    *p giá trị    *(h + k) ô thứ k (1 ô = 8 byte)\nsta.alloc(byte)   sta.free(p)   mem.memset(p \' giá-trị \' số-ô)\nSau sta.free, p trở thành con trỏ rỗng.'],
+['Sd++: ids sb và Reback','block điều-kiện: … transf $ (xong) | break $ (thoát) | $$ (Reback)\nremaining: …      mỗi lần kích hoạt tối đa 65536 Reback\n$$ ngoài ids sb là dừng khẩn cấp (E409)'],
+['Sd++: mã lỗi','E405 con trỏ rỗng hoặc vùng đã giải phóng   E406 giải phóng sai\nE407 xin quá nhiều   E408 ngoài vùng   E402 Reback vượt\nE208 thiếu ##   E209/E210 defk sai   W302 rò rỉ   W203 Reback không sửa biến'],
+['Dự án nhiều tệp (đề xuất ĐX)','Mỗi tab là một tệp. Đặt tên chỉ gồm chữ không dấu, số, _ (vd: toan.sd).\nimp*toan.ed nhập hàm, cấu trúc (và biến toàn cục ở Sd++) từ tệp toan.sd\n(trong Sd++ viết imp*toan.$). Tệp được nhập không chạy main của nó.\n★ Tệp chính: Chạy và Gỡ lỗi luôn bắt đầu từ tệp này.\nMở thư mục (Chrome, Edge) nạp cả dự án và Lưu ghi thẳng vào tệp.\nLỗi: E205 không thấy tệp, E211 nhập vòng tròn, E302 trùng tên hàm.'],
+['Giới hạn của IDE này','Chạy Sd 2 và Sd++ (Phần I và II của giáo trình).\nint là số nguyên tối đa 2^53. Tệp chỉ tồn tại trong một lượt chạy.\nTối đa 4 triệu bước và 400000 ký tự đầu ra mỗi lượt.\nGỡ lỗi: số dòng = điểm dừng; hàm gọi trong chuỗi /s{} chạy trọn một bước.\nSd++: sys.sleep không chờ thật; draw.rect chỉ vẽ khung chữ nhật, bỏ qua y.']
+].map(function(x){return '<div class="ref"><h4>'+esc(x[0])+'</h4><pre>'+esc(x[1])+'</pre></div>'}).join('');
+
+/* ---------- khởi động ---------- */
+function boot(){
+  var s=lsGet();
+  if(s&&s.files&&s.files.length){state=s;state.active=Math.min(state.active||0,state.files.length-1);state.fs=state.fs||13}
+  else{
+    var c=CASES.filter(function(x){return x.t==='Tìm sinh viên điểm cao nhất'})[0]||CASES[0];
+    state={files:[{name:'bai-1.sd',text:c.c,input:c.i}],active:0,fs:13};
+  }
+  document.documentElement.style.setProperty('--fs',state.fs+'px');
+  var f=cur();ta.value=f.text;loadStdin();
+  drawTabs();render();cursorInfo();liveCheck();run();
+}
+boot();
+})();
+</script>
+
+</body></html>
