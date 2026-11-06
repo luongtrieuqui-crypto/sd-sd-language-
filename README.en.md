@@ -4,15 +4,19 @@ This repository contains projects and learning materials for the Sd and Sd++ pro
 
 ## Repository contents
 
-- **`Sd IDE.html`** — a browser-based IDE and interpreter for Sd 2, with editing, syntax highlighting, execution, debugging, and input/output panels. The interface is currently in Vietnamese.
-- **`sdform.sd`** and **`shortsd.sd`** — Sd source files.
-- **Vietnamese `.tex`, `.txt`, and `.pdf` materials** — course, language specification, and reference documents.
-- **`form opencode sd`** and **`formopen code sd++`** — additional project files.
+- `Sd IDE.html` — browser-based IDE for Sd 2 with editor, execution, debugger, and variable/output panes.
+- `sdform.sd` and `shortsd.sd` — example source files.
+- `.tex`, `.txt`, and `.pdf` files — technical and educational materials.
+- `form opencode sd` and `formopen code sd++` — additional language-related project files.
 
-## Using the IDE
+## Purpose
 
-Open `Sd IDE.html` in a modern browser. You can edit or open `.sd`, `.sdpp`, and `.txt` files, then run or debug them in the IDE.
+This project is focused on language study, experimentation, and educational content. It includes practical examples together with reference material.
 
-## Language and documentation
+## How to use
 
-The source files and documentation in this repository are primarily in Vietnamese. This README is an English introduction; it is not a translation of the language specification or the full IDE interface.
+Open `Sd IDE.html` in a web browser and start coding in the editor. You can run programs, inspect variables, and debug step-by-step.
+
+## Language note
+
+The repository is mostly in Vietnamese, including the IDE labels and many docs. This file is a concise English version for general documentation.
