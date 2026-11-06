@@ -1,0 +1,5 @@
+imp*ioprt.ed
+sta(main){
+   iid: sta(pri) => "hello world" ed
+  ref* 0 ed
+} ed
