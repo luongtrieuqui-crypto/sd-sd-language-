@@ -1,0 +1,441 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- UNIVERSAL PREAMBLE BLOCK ---
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.2cm, right=2.2cm]{geometry}
+\usepackage{fontspec}
+
+\usepackage[vietnamese, bidi=basic, provide=*]{babel}
+
+\babelprovide[import, onchar=ids fonts]{vietnamese}
+\babelprovide[import, onchar=ids fonts]{english}
+
+% Set default font to Noto Sans
+\babelfont{rm}{Noto Sans}
+\babelfont[vietnamese]{rm}{Noto Sans}
+
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tcolorbox}
+
+% Palette Colors for UI Depth
+\definecolor{codebg}{rgb}{0.96,0.97,0.98}
+\definecolor{codeblue}{rgb}{0.05,0.25,0.65}
+\definecolor{codegreen}{rgb}{0.1,0.55,0.25}
+\definecolor{codered}{rgb}{0.75,0.15,0.15}
+\definecolor{boxbg}{rgb}{0.92,0.95,0.98}
+\definecolor{boxborder}{rgb}{0.2,0.4,0.7}
+
+\lstset{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    stringstyle=\color{codered},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    showstringspaces=false,
+    frame=single,
+    framerule=0.8pt,
+    rulecolor=\color{boxborder},
+    tabsize=4
+}
+
+\newtcolorbox{tipbox}[1]{
+    colback=boxbg,
+    colframe=boxborder,
+    fonttitle=\bfseries,
+    title=#1,
+    arc=3mm
+}
+
+\title{\textbf{GIÁO TRÌNH LẬP TRÌNH SD \& SD++ TOÀN DIỆN}\\
+\large\textit{Từ Nhập Môn Căn Bản Đến Kỹ Thuật Hệ Thống Nâng Cao -- Lý Thuyết, Mã Mẫu \& Bài Tập Thực Hành}}
+\author{\textbf{Biên soạn:} Lương (Sáng tạo Kiến trúc) \& Sd++ Core Engine Team}
+\date{Xuất bản năm 2026 -- Giáo trình Chuẩn Quốc Gia}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Giáo trình này được thiết kế như một lộ trình huấn luyện lập trình viên chuyên nghiệp cho hệ sinh thái ngôn ngữ **Sd** và **Sd++**. Với phương pháp hướng dẫn trực quan, nhiều ví dụ thực tế và bộ bài tập tự luyện từ cơ bản đến nâng cao, học viên sẽ nắm vững kiến trúc siêu phẳng, các cờ chốt luồng thực thi cấp thấp, quản lý con trỏ phần cứng, cơ chế tự sửa lỗi Reback \texttt{\$\$} và siêu lập trình metaprogramming với \texttt{defk} và \texttt{define}.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section*{LỜI NÓI ĐẦU: TẠI SẠO LẠI LÀ SD \& SD++?}
+\addcontentsline{toc}{section}{LỜI NÓI ĐẦU: TẠI SẠO LẠI LÀ SD \& SD++?}
+% =============================================================================
+
+Trong kỷ nguyên phát triển ứng dụng xé gió, sự cồng kềnh của các ngôn ngữ cấp cao truyền thống vô tình tạo nên rào cản về cú pháp và hiệu năng. Ngôn ngữ **Sd** và phiên bản mở rộng **Sd++** được ra đời với một triết lý đột phá: **Cấu trúc Siêu Phẳng (Ultra-Flat), Điều khiển Luồng Tự Do (Freedom Control Flow)** và **Tương thích Trực tiếp Phần Cứng**.
+
+Hệ sinh thái Sd/Sd++ không ép buộc bạn phải viết hàng loạt ngoặc móc đóng mở cồng kềnh. Thay vào đó, ngôn ngữ sử dụng **Bộ cờ chốt ngắt câu** cực kỳ tường minh (\texttt{\$}, \texttt{₫}, \texttt{€}, \texttt{\$\$}, \texttt{\#}, \texttt{\#\#}), vừa tối ưu cho tầm mắt con người, vừa giúp Compiler bóc tách tốc độ cực hạn.
+
+Giáo trình này bao gồm **4 Chương chính**, đưa bạn đi từ khái niệm hình học nhập môn cho đến khi tự tay viết các hệ thống lớn.
+
+% =============================================================================
+\section{CHƯƠNG 1: KIẾN TRÚC NHẬP MÔN \& BỘ NGUYÊN TẮC CỐT LÕI}
+% =============================================================================
+
+\subsection{1.1. Chiếc Hộp Bảo Mật: \texttt{ssta} và \texttt{\#\#}}
+Mọi chương trình Sd++ đều tương tự một chiếc hộp bảo vệ an toàn tuyệt đối:
+\begin{itemize}
+    \item **\texttt{ssta}**: Nắp mở hộp (Root Entry). Đặt ở dòng đầu tiên để thiết lập bộ nhớ và ngữ nghĩa hệ thống.
+    \item **\texttt{\#\#}**: Nắp đóng sập (Global Hard Clear). Đặt ở dòng cuối cùng của file để ra lệnh cho Compiler dọn sạch Stack/Register và hard shutdown ứng dụng.
+\end{itemize}
+
+\begin{lstlisting}[caption={Cấu trúc khung nguyên thủy chuẩn của một chương trình Sd++}]
+ssta {
+    */ Toàn bộ mã nguồn, thư viện và khai báo nằm ở đây
+}
+
+##
+\end{lstlisting}
+
+\subsection{1.2. Tam Hợp Bất Biến: \texttt{sta}, \texttt{iid} và \texttt{\#}}
+Ba từ khóa cốt lõi làm nên sinh khí cho ngôn ngữ:
+1. **\texttt{sta} (Statement Authority -- Thể xác):** Khung chứa các cấu trúc điều kiện, vòng lặp và logic.
+2. **\texttt{iid} (Instruction Identity -- Linh hồn):** Thổi lệnh thực thi vào khung (in ấn, gán dữ liệu, nhập liệu).
+3. **\texttt{\#} (Comprehensive Anchor -- Trạm phân đoạn):** Khóa bảo vệ quy tắc hệ thống, cấm tuyệt đối mọi câu lệnh đè hay sửa đổi trái phép.
+
+\subsection{1.3. Bảng Quy Tắc Dấu Ngắt (Terminator Suite)}
+Để code không bị rác cú pháp, bạn chỉ chốt dấu khi thực sự kết thúc một phạm vi hay câu lệnh:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Dấu Ngắt} & \textbf{Tên Gọi} & \textbf{Quy Tắc Sử Dụng} \\ \midrule
+\texttt{\$} & Scope Terminator & Chốt câu lệnh chuẩn có khung phạm vi. \\
+\texttt{₫} & Frameless Global Terminator & Chốt đúng 1 lần cuối dòng khai báo biến trần toàn cục. \\
+\texttt{€} & Outer Frame Terminator & Chốt khối \texttt{define[...] \{ ... \} €} (Kết trước nạp sau). \\
+\texttt{\$\$} & Conditional Reback / Jump & Chốt nhánh lỗi trong \texttt{ids sb} để tự nhảy lùi kiểm tra lại. \\
+\texttt{\#} & Comprehensive Anchor & Chốt chặn cuối khối \texttt{defk} bảo vệ quy tắc. \\
+\texttt{\#\#} & Global Hard Clear & Chốt tận cùng file để ngắt toàn bộ chương trình. \\ \bottomrule
+\end{tabular}
+\caption{Bảng tra cứu quy tắc chốt ngắt câu trong Sd/Sd++}
+\end{table}
+
+\subsection{1.4. Ví Dụ Trực Quan 1.1: Chương Trình "Hello Sd++ World"}
+\begin{lstlisting}[caption={Chương trình Hello World đầu tiên}]
+ssta {
+    imp*ioprt.$
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "in_ra"
+    ]{
+        main: {
+            in_ra: "Chao mung ban den voi Ngon Ngu Sd++!" $
+            ref*0 $:
+        } $
+    } €
+}
+
+##
+\end{lstlisting}
+
+\begin{tipbox}{Ghi Chú An Toàn Cần Nhớ!}
+\begin{itemize}
+    \item **Ghi chú 1 dòng (\texttt{*/ ...}):** Viết \texttt{*/} ở đầu dòng, xuống dòng là tự hết.
+    \item **Ghi chú khối (\texttt{\textbackslash\textbackslash{} ... \textbackslash\textbackslash{}}):** Bọc trong hai cặp backslash. Thiếu dấu đóng \texttt{\textbackslash\textbackslash{}} sẽ làm toàn bộ mã nguồn bên dưới bị ngắt.
+\end{itemize}
+\end{tipbox}
+
+% =============================================================================
+\section{CHƯƠNG 2: BIẾN TOÀN CỤC TRẦN, IN SIÊU TỐC \& CHUYỂN NHÁNH REBACK}
+% =============================================================================
+
+\subsection{2.1. Biến Toàn Cục Trần Khai Báo Bằng \texttt{₫}}
+Trong Sd/Sd++, các biến toàn cục được khai báo trần ngoài khung bằng cú pháp \texttt{ids.g: name = val ₫}. Khi gọi lại ở bất kỳ đâu trong chương trình, ta dùng cú pháp \texttt{ids(name).g} (rất phẳng và không cần chốt dấu \texttt{\$}).
+
+\subsection{2.2. In Định Dạng Siêu Tốc (\texttt{/s}, \texttt{/d}, \texttt{/f})}
+Không cần nối chuỗi cồng kềnh với dấu \texttt{+}, Sd++ cho phép nhúng trực tiếp ký tự đặc tả vào chuỗi:
+* \texttt{/s}: Nhúng chuỗi văn bản (string).
+* \texttt{/d}: Nhúng số nguyên (decimal / int).
+* \texttt{/f}: Nhúng số thực (float).
+
+\subsection{2.3. Khối Rẽ Nhánh Tự Sửa Lỗi \texttt{ids sb} và Cờ \texttt{\$\$}}
+Thay vì dùng vòng lặp \texttt{while} hay \texttt{for} phức tạp, Sd++ giới thiệu **Selection Block (\texttt{ids sb})**. Nếu phát hiện dữ liệu lỗi ở một nhánh, bạn tiến hành sửa đổi và đặt cờ \texttt{\$\$} ở cuối nhánh đó. Compiler sẽ tự động thực hiện hành vi **Reback (Nhảy lùi)** lên đầu khối để kiểm tra lại điều kiện mới!
+
+\subsection{2.4. Ví Dụ Trực Quan 2.1: Hệ Thống Giám Sát \& Tự Động Sưởi Nhiệt Độ}
+\begin{lstlisting}[caption={Chương trình tự sửa lỗi nhiệt độ với cờ Reback \$\$}]
+ssta {
+    imp*ioprt.$
+
+    */ 1. Khai báo biến trần toàn cục chốt bằng ₫
+    ids.g: server_name = "Ha Noi Core DataCenter" ₫
+    ids.g: init_temp = -25 ₫  */ Nhiệt độ âm nghiêm trọng (-25°C)
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            iptedt.int current_temp = ids(init_temp).g $
+
+            ids.pri: "May chu: /sids(server_name).g" $
+            ids.pri: "Nhiet do ban dau: /dcurrent_temp C" $
+
+            */ 2. Selection Block tự sửa lỗi
+            ids sb(current_temp) {
+                block current_temp > 0:
+                    ids.pri: "He thong am, van hanh toi uu!" $
+                    transf $ $
+
+                block current_temp < 0:
+                    ids.pri: "Phat hien nhiet do am (/dcurrent_temp C)! Dang bat suoi..." $
+                    current_temp = current_temp + 35 $
+                    $$ */ Cờ $$ tự nhảy lùi Reback lên đầu khối để kiểm tra lại!
+
+                remaining:
+                    break $$
+            } $
+
+            ref*0 $:
+        } $
+    } €
+}
+
+##
+\end{lstlisting}
+
+% =============================================================================
+\section{CHƯƠNG 3: QUẢN LÝ BỘ NHỚ, CON TRỎ VÀ THƯ VIỆN CHUẨN}
+% =============================================================================
+
+\subsection{3.1. Thao Tác Con Trỏ Cấp Thấp (\texttt{@} và \texttt{*})}
+Sd++ cung cấp quyền can thiệp ô nhớ như ngôn ngữ C/Assembly:
+* **Địa chỉ ô nhớ (\texttt{@var})**: Lấy vị trí ô nhớ trong Virtual Memory.
+* **Giải con trỏ (\texttt{*ptr})**: Đọc hoặc ghi đè trực tiếp giá trị vào ô nhớ mà con trỏ trỏ tới.
+* **Khai báo con trỏ trần**: \texttt{ptr.g: p\_var = @var ₫}.
+
+\subsection{3.2. Cấp Phát Bộ Nhớ Heap Động (\texttt{sta.alloc} \& \texttt{sta.free})}
+Quản lý vùng nhớ Heap thủ công xé gió:
+* \texttt{iptedt.ptr heap\_addr = sta.alloc(64) \$} (Cấp phát 64 bytes).
+* \texttt{*heap\_addr = 999 \$} (Ghi giá trị vào Heap).
+* \texttt{sta.free(heap\_addr) \$} (Giải phóng ô nhớ).
+
+\subsection{3.3. Hệ Thống Thư Viện Chuẩn Nạp Sẵn}
+Hệ thống nạp sẵn trọn bộ thư viện mở rộng:
+1. \texttt{imp*ioprt}: Nhập xuất dữ liệu màn hình.
+2. \texttt{imp*math}: Hàm toán học (\texttt{math.abs}, \texttt{math.pow}, \texttt{math.sqrt}).
+3. \texttt{imp*mem}: Quản lý memory cấp thấp (\texttt{mem.memset}).
+4. \texttt{imp*str}: Thao tác chuỗi (\texttt{str.len}, \texttt{str.upper}, \texttt{str.concat}).
+5. \texttt{imp*sys}: Thời gian hệ thống (\texttt{sys.time}, \texttt{sys.sleep}).
+6. \texttt{imp*file}: Đọc ghi ổ đĩa thực tế (\texttt{file.write}, \texttt{file.read}).
+7. \texttt{imp*draw}: Khai báo và vẽ đồ họa Canvas ASCII Console (\texttt{draw.rect}).
+
+\subsection{3.4. Ví Dụ Trực Quan 3.1: Quản Lý Bộ Nhớ Heap \& File I/O Real-time}
+\begin{lstlisting}[caption={Chương trình thao tác con trỏ Heap và ghi file ổ đĩa}]
+ssta {
+    imp*ioprt.$
+    imp*mem.$
+    imp*file.$
+    imp*str.$
+
+    ids.g: log_filename = "system_log.txt" ₫
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            */ 1. Cấp phát ô nhớ Heap
+            iptedt.ptr p_mem = sta.alloc(128) $
+            *p_mem = 2026 $
+
+            iptedt.int val = *p_mem $
+            ids.pri: "Gia tri ghi trong Heap: /dval" $
+
+            */ 2. Thao tác chuỗi và ghi file
+            iptedt.string msg = "Sd++ Engine Dynamic Allocation Success!" $
+            call file.write("system_log.txt", msg) $
+
+            iptedt.string read_back = call file.read("system_log.txt") $
+            ids.pri: "Noi dung doc tu file: /sread_back" $
+
+            */ 3. Giải phóng ô nhớ
+            sta.free(p_mem) $
+
+            ref*0 $:
+        } $
+    } €
+}
+
+##
+\end{lstlisting}
+
+% =============================================================================
+\section{CHƯƠNG 4: SIÊU LẬP TRÌNH METAPROGRAMMING \& DỰ ÁN THỰC THẾ}
+% =============================================================================
+
+\subsection{4.1. Tạo Cú Pháp Tùy Biến Bằng \texttt{defk} và \texttt{define}}
+Cho phép lập trình viên tự sáng tạo ra "Desired Framework" bằng cách gom các cờ chốt vào một ký tự custom (ví dụ \texttt{¥}), nhưng toàn bộ quy tắc vẫn được chốt chặn an toàn tuyệt đối bởi trạm phân đoạn \texttt{\#}.
+
+\subsection{4.2. Dự Án Hệ Thống Thực Tế: Server Health Monitor \& Auto-Healer}
+Dưới đây là mã nguồn ứng dụng quy mô lớn tích hợp 100\% tính năng của Sd++:
+
+\begin{lstlisting}[caption={Ứng dụng quản lý máy chủ Auto-Healing quy mô lớn}]
+ssta {
+    imp*ioprt.$
+    imp*math.$
+    imp*mem.$
+    imp*sys.$
+
+    */ 1. Tự tạo kiểu ngắt custom ¥ bằng defk (Bảo vệ tuyệt đối bằng #)
+    defk<ids.end: text "¥"> {
+        init ids.edt ("¥" endlogic == "$"+"€"+"$$") 
+        func * end.sta * end.iid #
+    }
+
+    */ 2. Khai báo biến toàn cục trần chốt bằng ₫
+    ids.g: cluster_name = "Cloud-Cluster-Alpha" ₫
+    ids.g: node_status = -100 ₫
+    ptr.g: p_status = @node_status ₫
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            init ¥ */ Kích hoạt dùng cờ ngắt ¥
+
+            iptedt.int status = ids(node_status).g $
+            iptedt.ptr p_local = @status $
+
+            ids.pri: "=== KLUSTER MONITOR: /sids(cluster_name).g ===" ¥
+            ids.pri: "Trang thai Node ban dau: /dstatus" ¥
+
+            */ 3. Tự động khắc phục sự cố node bằng Reback $$
+            ids sb(status) {
+                block status == 200:
+                    ids.pri: "[ONLINE] Node hoat dong 100% cong suat!" ¥
+                    transf $ $
+
+                block status < 0:
+                    ids.pri: "[WARNING] Node gap su co (/dstatus)! Dang reset..." ¥
+                    *p_local = *p_local + 300 ¥
+                    $$ */ Nhảy Reback tự động kiểm tra lại condition mới!
+
+                remaining:
+                    ids.pri: "[RESET] Dua Node ve chuan 200..." ¥
+                    *p_local = 200 ¥
+                    break $$
+            } ¥
+
+            ref*0 $:
+        } ¥
+    } €
+}
+
+##
+\end{lstlisting}
+
+% =============================================================================
+\section{BỘ BÀI TẬP THỰC HÀNH TỰ LUYỆN (CÓ LỜI GIẢI)}
+% =============================================================================
+
+\subsection{Bài Tập Mức Độ 1: Nhập Môn Căn Bản}
+**Đề bài 1.1:** Viết chương trình Sd++ khai báo tên bạn (`user_name`) và tuổi (`user_age`) dưới dạng biến toàn cục trần chốt bằng \texttt{₫}. In ra màn hình bằng cú pháp định dạng siêu tốc \texttt{/s} và \texttt{/d}.
+
+**Lời giải mẫu Bài 1.1:**
+\begin{lstlisting}
+ssta {
+    imp*ioprt.$
+
+    ids.g: user_name = "Nguyen Van A" ₫
+    ids.g: user_age = 20 ₫
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            ids.pri: "Xin chao: /sids(user_name).g | Tuoi: /dids(user_age).g" $
+            ref*0 $:
+        } $
+    } €
+}
+##
+\end{lstlisting}
+
+\subsection{Bài Tập Mức Độ 2: Rẽ Nhánh Auto-Healing}
+**Đề bài 2.1:** Khai báo điểm số `score = -15`. Dùng khối \texttt{ids sb} kiểm tra. Nếu điểm âm, tự động cộng thêm `30` điểm và dùng cờ Reback \texttt{\$\$} nhảy lùi kiểm tra lại cho tới khi điểm dương thì in ra *"Duyệt điểm thành công!"*.
+
+**Lời giải mẫu Bài 2.1:**
+\begin{lstlisting}
+ssta {
+    imp*ioprt.$
+
+    ids.g: init_score = -15 ₫
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            iptedt.int score = ids(init_score).g $
+
+            ids sb(score) {
+                block score > 0:
+                    ids.pri: "Duyet diem thanh cong: /dscore" $
+                    transf $ $
+
+                block score <= 0:
+                    ids.pri: "Diem bi am (/dscore)! Cong 30..." $
+                    score = score + 30 $
+                    $$ */ Cờ $$ Reback tự nhảy kiểm tra lại!
+
+                remaining:
+                    break $$
+            } $
+
+            ref*0 $:
+        } $
+    } €
+}
+##
+\end{lstlisting}
+
+\subsection{Bài Tập Mức Độ 3: Con Trỏ \& Bộ Nhớ Dynamic Heap}
+**Đề bài 3.1:** Viết chương trình cấp phát `64 bytes` trên Heap bằng \texttt{sta.alloc}. Ghi giá trị `999` vào địa chỉ này thông qua con trỏ `*p`. Đọc lại giá trị, in ra màn hình và thu hồi bộ nhớ bằng \texttt{sta.free}.
+
+**Lời giải mẫu Bài 3.1:**
+\begin{lstlisting}
+ssta {
+    imp*ioprt.$
+    imp*mem.$
+
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            iptedt.ptr heap_ptr = sta.alloc(64) $
+            *heap_ptr = 999 $
+
+            iptedt.int read_data = *heap_ptr $
+            ids.pri: "Du lieu doc tu Heap: /dread_data" $
+
+            sta.free(heap_ptr) $
+            ref*0 $:
+        } $
+    } €
+}
+##
+\end{lstlisting}
+
+\section*{LỜI KẾT & HƯỚNG MỞ RỘNG}
+\addcontentsline{toc}{section}{LỜI KẾT \& HƯỚNG MỞ RỘNG}
+Chúc mừng bạn đã hoàn tất toàn bộ Giáo trình Lập trình **Sd \& Sd++ Master**! Thông qua việc nắm vững bộ cờ chốt, cơ chế Reback tự điều chỉnh, quản lý con trỏ phần cứng và metaprogramming, bạn đã sẵn sàng xây dựng các ứng dụng hệ thống cấp cao với tốc độ cực hạn và cú pháp phẳng tối ưu.
+
+\end{document}

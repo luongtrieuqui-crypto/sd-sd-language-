@@ -1,0 +1,204 @@
+================================================================================
+          ĐẶC TẢ KỸ THUẬT TỐI CAO VÀ CẨM NANG TOÀN DIỆN NGÔN NGỮ SD VÀ SD++
+================================================================================
+Tác giả triết lý & cú pháp: Lương
+Hệ thống Engine & Spec: Sd++ Compiler Team
+Phiên bản: 2026 - Bản Master Chính Thức (Toàn diện 100%)
+
+--------------------------------------------------------------------------------
+1. TỔNG QUAN VÀ TRIẾT LÝ NỀN TẢNG
+--------------------------------------------------------------------------------
+Ngôn ngữ lập trình Sd và phiên bản nâng cấp Sd++ được thiết kế dựa trên triết lý
+Cấu trúc Siêu Phẳng (Ultra-Flat Architecture), Tự Do Điều Hướng Luồng (Freedom 
+Control Flow), Nén Cú Pháp Cấp Thấp và Bảo Vệ Ranh Giới Tối Cao.
+
+Hai trụ cột triết lý cốt lõi:
+1. Thể xác (sta) và Linh hồn (iid) không thể tách rời:
+   Sự kết hợp giữa khung xương chứa logic (sta) và định danh lệnh thực thi (iid)
+   tạo nên sinh khí cho mọi câu lệnh trong chương trình.
+2. Ranh giới Tuyệt đối và Điểm dừng An toàn:
+   Sự xuất hiện của 'ssta' ở đầu cùng và '##' ở cuối cùng xác lập ranh giới bất biến.
+   Mọi lỗi cú pháp hay hành vi thực thi tà đạo đều được dọn dẹp bộ nhớ triệt để
+   ngay khi trình biên dịch quét chạm mốc này.
+
+--------------------------------------------------------------------------------
+2. MA TRẬN PHÂN CẤP THỨ BẬC THỰC THI (SD++ COMPLETE HIERARCHY)
+--------------------------------------------------------------------------------
+Mọi thành phần trong Sd++ vận hành theo ma trận quyền hạn từ đỉnh cao nhất tới 
+điểm kết thúc tuyệt đối:
+
+[ TẦNG KHỞI TẠO TẤT CẢ ]      ssta  ---> (Super Statement / Root Origin)
+                                │
+[ TẦNG THỂ XÁC & LINH HỒN ]    sta / iid ---> (Logic Frame & Instruction Identity)
+                                │
+[ TẦNG PHẲNG & ĐỔI TÊN ]       iidsta. / ids. / define[...] €
+                                │
+[ TẦNG KẾT CUSTOM ]            defk <...> -> Custom Terminator (ví dụ: ¥)
+                                │
+[ TẦNG CHỐT LẠI ]              $ / ₫ / € / $$
+                                │
+[ TRẠM PHÂN ĐOẠN AN TOÀN ]     #     ---> (Comprehensive Anchor)
+                                │
+[ TẦNG KẾT TẤT CẢ RẤT DỄ ]     ##    ---> (Global Hard Clear & Hard Shutdown)
+
+--------------------------------------------------------------------------------
+3. CHI TIẾT BỘ TỨ CỐT LÕI (ROOT & CORE TRIAD)
+--------------------------------------------------------------------------------
+1. ssta (Super Statement / Root Entry):
+   - Đặt ở dòng đầu tiên của file mã nguồn.
+   - Nạp môi trường, cấp phát ngữ nghĩa và bao bọc toàn bộ hệ thống.
+
+2. sta (Statement Authority - Thể xác):
+   - Đỉnh cao của cấu trúc logic. Dựng khung chứa điều kiện, vòng lặp, hàm và
+     các phạm vi thực thi (Scope).
+
+3. iid (Instruction Identity - Linh hồn):
+   - Thấu kính định danh và điều khiển. Thổi sinh khí thực thi vào các khung 'sta'
+     để biến thành lệnh thực tế (pri, ipt, val).
+
+4. # (Comprehensive Anchor - Trạm phân đoạn an toàn):
+   - Cố định 100%, có thẩm quyền tối cao bảo vệ khối 'defk' và các module.
+   - Cấm tuyệt đối mọi câu lệnh 'define' hay 'init' ghi đè lên ý nghĩa của '#'.
+   - Là điểm neo Panic Mode Recovery để Parser reset trạng thái an toàn.
+
+5. ## (Global Hard Clear & Absolute Termination):
+   - Đặt ở cuối cùng file mã nguồn để đóng toàn bộ chương trình cấp tốc.
+   - Hủy toàn bộ Call Stack, thanh ghi, giải phóng bộ nhớ Heap/Stack và trả
+     trạng thái phần cứng về 0 lập tức mà không cần đếm số ngoặc còn thiếu.
+
+--------------------------------------------------------------------------------
+4. BỘ CỜ CHỐT LUỒNG CỐT LÕI (TERMINATOR SUITE)
+--------------------------------------------------------------------------------
+Dòng nào thực sự kết thúc một câu lệnh hoặc phạm vi thì mới cần chốt đúng ký tự
+ngắt của phạm vi đó:
+
+1. '$' (Scope Statement Terminator):
+   - Chốt câu lệnh thực thi có khung/scope chuẩn (Ví dụ: ids.pri: "Xin chào" $).
+
+2. '₫' (Frameless Global Terminator):
+   - Chốt khai báo biến toàn cục trần nằm ngoài khung (Ví dụ: ids.g: age = 18 ₫).
+
+3. '€' (Outer Frame Terminator):
+   - Chốt Outer Frame 'define[...] { ... } €'. 
+   - Áp dụng cơ chế "kết trước, nạp định nghĩa sau".
+
+4. '$$' (Conditional Jump & Spinlock):
+   - Trong khối 'ids sb': Kích hoạt Reback tự động nhảy ngược lại đầu khối để đánh
+     giá lại điều kiện sau khi biến bị sửa đổi.
+   - Nằm ngoài Scope: Biến thành Kernel Spinlock / Hard Halt dừng khẩn cấp hệ thống.
+
+--------------------------------------------------------------------------------
+5. QUY TẮC PHẠM VI VÀ GHI CHÚ (COMMENTS)
+--------------------------------------------------------------------------------
+1. Ghi chú 1 dòng (*/ ...):
+   - Viết */ ở đầu, chỉ áp dụng trên 1 dòng duy nhất cho đến khi gặp ký tự xuống dòng.
+
+2. Ghi chú nhiều dòng (\\ ... \\):
+   - Bọc trong cặp mở \\ và cặp đóng \\.
+   - LƯU Ý SINH TỒN: Nếu mở \\ mà quên dấu \\ đóng ở cuối, Lexer sẽ nuốt toàn bộ
+     mã nguồn phía dưới biến thành ghi chú!
+
+--------------------------------------------------------------------------------
+6. MẢNG, CON TRỎ VÀ BỘ NHỚ CẤP THẤP
+--------------------------------------------------------------------------------
+1. Mảng phẳng (sta.arr / sta.arr.g):
+   - Khai báo mảng toàn cục trần chốt bằng ₫ (sta.arr.g: numbers = [10, 20] ₫).
+   - Đọc/ghi phần tử qua chỉ số ngoặc vuông [index].
+
+2. Con trỏ tự do cấp thấp (@ và *):
+   - @var: Lấy địa chỉ ô nhớ của biến hoặc mảng (Address-of).
+   - *ptr: Giải con trỏ, đọc hoặc ghi đè trực tiếp ô nhớ (*p_target = 999 $).
+   - ptr.g: Khai báo con trỏ toàn cục trần chốt bằng ₫.
+
+3. Bộ nhớ Heap động (sta.alloc & sta.free):
+   - sta.alloc(size): Cấp phát trực tiếp 'size' bytes trên Heap.
+   - sta.free(ptr): Thu hồi ô nhớ thủ công cấp thấp.
+
+--------------------------------------------------------------------------------
+7. IN ĐỊNH DẠNG SIÊU TỐC (FORMATTED STRINGS)
+--------------------------------------------------------------------------------
+Không cần nối chuỗi cồng kềnh, chèn trực tiếp các ký tự đặc tả vào chuỗi:
+- /s : Đọc biến dạng chuỗi (string).
+- /d : Đọc biến dạng số nguyên (int / decimal).
+- /f : Đọc biến dạng số thực (float).
+
+Ví dụ: ids.pri: "Tên: /sids(sys_name).g | Tuổi: /dage | GPA: /fgpa" $
+
+--------------------------------------------------------------------------------
+8. HỆ THỐNG THƯ VIỆN CHUẨN NẠP SẴN (STANDARD LIBRARIES)
+--------------------------------------------------------------------------------
+1. imp*ioprt : Nhập/Xuất Console chuẩn.
+2. imp*math  : Engine toán học (math.abs, math.pow, math.sqrt, math.max, math.min).
+3. imp*mem   : Quản lý bộ nhớ cấp thấp (mem.memset, sta.alloc, sta.free).
+4. imp*str   : Thao tác chuỗi (str.len, str.upper, str.lower, str.concat).
+5. imp*sys   : Thời gian hệ thống (sys.time, sys.sleep).
+6. imp*file  : Đọc/Ghi file ổ đĩa thực tế (file.write, file.read).
+7. imp*draw  : Vẽ đồ họa Canvas Console ASCII (draw.rect).
+
+--------------------------------------------------------------------------------
+9. MÃ NGUỒN MẪU HOÀN CHỈNH TÍCH HỢP 100% CÚ PHÁP (MEGA DEMO)
+--------------------------------------------------------------------------------
+ssta {
+    imp*ioprt.$
+    imp*math.$
+    imp*mem.$
+    imp*str.$
+    imp*sys.$
+    imp*file.$
+    imp*draw.$
+
+    */ 1. Tạo kiểu kết custom ¥ bằng defk, bảo vệ bằng #
+    defk<ids.end: text "¥"> {
+        init ids.edt ("¥" endlogic == "$"+"€"+"$$") 
+        func * end.sta * end.iid #
+    }
+
+    */ 2. Khai báo biến toàn cục trần ngoài khung chốt bằng ₫
+    ids.g: app_name = "Sd++ Native Core" ₫
+    ids.g: core_temp = -20 ₫
+    ptr.g: p_global_temp = @core_temp ₫
+
+    */ 3. Khung Outer Frame define chốt bằng €
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "in_ra"
+    ]{
+        main: {
+            init ¥ */ Kích hoạt dùng dấu ¥
+
+            iptedt.int temp = ids(core_temp).g ¥
+            iptedt.ptr p_local = @temp ¥
+
+            in_ra: "Hệ thống: /sids(app_name).g" ¥
+            in_ra: "Nhiệt độ nhân ban đầu: /dtemp °C" ¥
+
+            */ 4. Selection block tự sửa lỗi với cờ $$ Reback
+            ids sb(temp) {
+                block temp > 0:
+                    in_ra: "Trạng thái vận hành tối ưu!" ¥
+                    transf $ $
+
+                block temp < 0:
+                    in_ra: "Phát hiện nhiệt âm (/dtemp)! Đang kích hoạt sưởi..." ¥
+                    *p_local = *p_local + 50 ¥
+                    $$ */ Cờ $$ tự nhảy lùi kiểm tra lại condition
+
+                remaining:
+                    break $$
+            } ¥
+
+            */ 5. Thao tác bộ nhớ Heap động
+            iptedt.ptr heap_mem = sta.alloc(64) $
+            *heap_mem = 777 $
+            iptedt.int read_val = *heap_mem $
+            in_ra: "Đọc giá trị từ Heap Memory: /dread_val" $
+            sta.free(heap_mem) $
+
+            ref*0 $:
+        } ¥
+    } €
+}
+
+*/ 10. KẾT TẤT CẢ VÀ TẮT HỆ THỐNG VỚI ##
+##
+================================================================================

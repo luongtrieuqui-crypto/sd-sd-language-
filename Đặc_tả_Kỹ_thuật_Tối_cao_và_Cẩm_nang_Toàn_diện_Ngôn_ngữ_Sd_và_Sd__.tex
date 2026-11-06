@@ -1,0 +1,245 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- UNIVERSAL PREAMBLE BLOCK ---
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{fontspec}
+
+\usepackage[vietnamese, bidi=basic, provide=*]{babel}
+
+\babelprovide[import, onchar=ids fonts]{vietnamese}
+\babelprovide[import, onchar=ids fonts]{english}
+
+% Set default font to Noto Sans
+\babelfont{rm}{Noto Sans}
+\babelfont[vietnamese]{rm}{Noto Sans}
+
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+
+% Custom styling for code listings
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{codeblue}{rgb}{0.1,0.2,0.6}
+\definecolor{codegreen}{rgb}{0.1,0.5,0.2}
+
+\lstset{
+    backgroundcolor=\color{codegray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    showstringspaces=false,
+    frame=single
+}
+
+\title{\textbf{ĐẶC TẢ KỸ THUẬT TỐI CAO VÀ CẨM NANG TOÀN DIỆN\\NGÔN NGỮ LẬP TRÌNH SD VÀ SD++}\\
+\large\textit{Kiến trúc Siêu Phẳng, Tự Do Luồng Thực Thi, Tam Hợp Bất Biến \& Ranh Giới Tuyệt Đối}}
+\author{\textbf{Sáng tạo \& Triết lý:} Lương | \textbf{Đặc tả Hệ thống Engine:} Sd++ Compiler Team}
+\date{Năm 2026 -- Bản Chính Thức Hoàn Chỉnh}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{TỔNG QUAN VÀ TRIẾT LÝ NỀN TẢNG}
+% =============================================================================
+
+Ngôn ngữ lập trình **Sd** và phiên bản nâng cấp **Sd++** được ra đời với triết lý tối thượng: **Siêu phẳng (Ultra-Flat), Tự do Luồng Thực thi (Freedom Control Flow), Nén Cú pháp Cấp thấp và Bảo vệ Ranh giới Tối cao**. 
+
+Khác với các ngôn ngữ truyền thống bị ràng buộc bởi các khối ngoặc cồng kềnh, phân cấp rườm rà hay cơ chế quản lý bộ nhớ đệm ẩn, Sd/Sd++ hướng trực tiếp đến tư duy của **Compiler Nguyên bản** và **Phần cứng Cấp thấp**.
+
+\subsection{Hai Trụ Cột Triết Lý}
+\begin{enumerate}
+    \item \textbf{Cơ thể và Linh hồn Không thể Tách rời:} Sự kết hợp giữa thể xác cấu trúc logic (\texttt{sta}) và linh hồn định danh lệnh (\texttt{iid}) tạo nên sinh khí cho toàn bộ câu lệnh.
+    \item \textbf{Ranh giới Tuyệt đối và Điểm dừng An toàn:} Sự xuất hiện của \texttt{ssta} ở đầu cùng và \texttt{\#\#} ở cuối cùng xác lập ranh giới bất biến. Không một lỗi cú pháp hay hành vi tà đạo nào có thể thoát khỏi sự dọn dẹp bộ nhớ tuyệt đối khi chạm mốc này.
+\end{enumerate}
+
+% =============================================================================
+\section{SƠ ĐỒ PHÂN CẤP THỨ BẬC THỰC THI (EXECUTION HIERARCHY)}
+% =============================================================================
+
+Hệ thống Sd++ vận hành dựa trên ma trận phân cấp quyền hạn từ đỉnh cao nhất tới điểm kết thúc tuyệt đối:
+
+\begin{verbatim}
+[ TẦNG KHỞI TẠO TẤT CẢ ]      ssta  ---> (Super Statement / Root Origin)
+                                │
+[ TẦNG THỂ XÁC & LINH HỒN ]    sta / iid ---> (Logic Frame & Instruction)
+                                │
+[ TẦNG PHẲNG & ĐỔI TÊN ]       iidsta. / ids. / define[...] €
+                                │
+[ TẦNG KẾT CUSTOM ]            defk <...> -> Custom Terminator (ví dụ: ¥)
+                                │
+[ TẦNG CHỐT LẠI ]              $ / ₫ / € / $$
+                                │
+[ TRẠM PHÂN ĐOẠN AN TOÀN ]     #     ---> (Comprehensive Anchor)
+                                │
+[ TẦNG KẾT TẤT CẢ RẤT DỄ ]     ##    ---> (Global Hard Clear & Shutdown)
+\end{verbatim}
+
+\subsection{Bảng Chi Tiết Bộ Bốn Cốt Lõi}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Ký tự / Từ khóa} & \textbf{Vị trí \& Cấp độ} & \textbf{Chức năng \& Bản chất Kỹ thuật} \\ \midrule
+\texttt{ssta} & Khởi đầu tất cả & Root Entry. Khởi tạo toàn bộ ngữ nghĩa và bộ nhớ. \\
+\texttt{sta} & Tầng Cao (Thần) & Statement Authority. Khung xương điều kiện, vòng lặp. \\
+\texttt{iid} & Tầng Giữa (Linh hồn) & Instruction Identity. Định danh và thực thi tác vụ. \\
+\texttt{\#} & Trạm phân đoạn & Comprehensive Anchor. Bảo vệ khối \texttt{defk}, cấm ghi đè. \\
+\texttt{\#\#} & Kết thúc tất cả & Global Hard Clear. Dọn Stack/Register, tắt máy. \\ \bottomrule
+\end{tabular}
+\caption{Bộ tứ cốt lõi điều khiển toàn bộ lifecycle của chương trình Sd++}
+\end{table}
+
+% =============================================================================
+\section{BỘ CỜ CHỐT LUỒNG CỐT LÕI (TERMINATOR SUITE)}
+% =============================================================================
+
+Trong Sd/Sd++, người dùng **không rải dấu ngắt tràn lan**. Dòng nào thực sự kết thúc một câu lệnh hoặc phạm vi thì mới cần chốt đúng ký tự ngắt của phạm vi đó.
+
+\subsection{Chi Tiết Các Cờ Chốt}
+\begin{itemize}
+    \item \textbf{\texttt{\$} (Scope Statement Terminator):} Chốt một câu lệnh thực thi có khung/scope chuẩn (ví dụ: \texttt{ids.pri: "Xin chào" \$}).
+    \item \textbf{\texttt{₫} (Frameless Global Terminator):} Chốt khai báo biến trần toàn cục ngoài khung (\texttt{ids.g: var = val ₫}).
+    \item \textbf{\texttt{€} (Outer Frame Terminator):} Chốt khối \texttt{define[...] \{ ... \} €}. Áp dụng cơ chế **kết trước, nạp định nghĩa sau**.
+    \item \textbf{\texttt{\$\$} (Conditional Jump \& Spinlock):}
+        \begin{itemize}
+            \item Khi nằm trong \texttt{ids sb}: Cờ kích hoạt nhảy Reback tự động kiểm tra lại điều kiện khi trạng thái biến bị thay đổi.
+            \item Khi nằm ngoài Scope: Biến thành **Kernel Spinlock / Hard Halt** dừng khẩn cấp hệ thống.
+        \end{itemize}
+    \item \textbf{\texttt{\#} (Comprehensive Anchor):} Chốt khối quy tắc \texttt{defk}. Đảm bảo các alias hay cấu trúc custom không bị sai lệch.
+    \item \textbf{\texttt{\#\#} (Absolute Termination):} Chốt ở cuối file. Cho phép ngắt toàn bộ chương trình cực kỳ dễ dàng mà không cần đếm xem còn bao nhiêu ngoặc đóng.
+\end{itemize}
+
+% =============================================================================
+\section{QUY TẮC PHẠM VI VÀ GHI CHÚ (COMMENTS)}
+% =============================================================================
+
+\subsection{Cấu Trúc Ghi Chú An Toàn}
+\begin{itemize}
+    \item \textbf{Ghi chú 1 dòng (\texttt{*/ ...}):} Bắt đầu bằng \texttt{*/}. Mọi ký tự đằng sau cho đến cuối dòng (\texttt{\textbackslash n}) sẽ bị bỏ qua.
+    \item \textbf{Ghi chú nhiều dòng (\texttt{\textbackslash\textbackslash{} ... \textbackslash\textbackslash{} }):} Bắt buộc phải có cặp mở \texttt{\textbackslash\textbackslash{}} và cặp đóng \texttt{\textbackslash\textbackslash{}}.
+    \begin{itemize}
+        \item \textbf{Cảnh báo sinh tồn:} Nếu thiếu cặp đóng \texttt{\textbackslash\textbackslash{}}, Lexer sẽ coi toàn bộ mã nguồn phía dưới là ghi chú và bỏ qua toàn bộ.
+    \end{itemize}
+\end{itemize}
+
+% =============================================================================
+\section{MẢNG, CON TRỎ VÀ BỘ NHỚ CẤP THẤP}
+% =============================================================================
+
+Sd++ hỗ trợ thao tác trực tiếp trên bộ nhớ như C/Assembly nhưng với cú pháp phẳng hơn:
+
+\subsection{Cú Pháp Thao Tác Ô Nhớ}
+\begin{itemize}
+    \item \textbf{Địa chỉ ô nhớ (\texttt{@var}):} Lấy vị trí địa chỉ của biến hoặc mảng trong Virtual Memory.
+    \item \textbf{Giải con trỏ (\texttt{*ptr}):} Đọc hoặc ghi đè trực tiếp giá trị tại ô nhớ mà con trỏ đang trỏ tới (\texttt{*p = 999 \$}).
+    \item \textbf{Khai báo con trỏ trần (\texttt{ptr.g: p = @var ₫}):} Khai báo con trỏ ngoài khung toàn cục.
+    \item \textbf{Heap Dynamic Memory (\texttt{sta.alloc} / \texttt{sta.free}):} Cấp phát bộ nhớ động trực tiếp từ Heap và thu hồi thủ công.
+\end{itemize}
+
+% =============================================================================
+\section{IN ĐỊNH DẠNG SIÊU TỐC (FORMATTED STRINGS)}
+% =============================================================================
+
+Nhúng trực tiếp biến vào trong chuỗi văn bản không cần nối chuỗi:
+\begin{itemize}
+    \item \textbf{\texttt{/s}:} Chèn chuỗi văn bản (string).
+    \item \textbf{\texttt{/d}:} Chèn số nguyên (decimal / int).
+    \item \textbf{\texttt{/f}:} Chèn số thực (float).
+\end{itemize}
+
+\textit{Ví dụ:} \texttt{ids.pri: "Tên: /sids(user\_name).g | Tuổi: /dage | Điểm: /fgpa" \$}
+
+% =============================================================================
+\section{CHƯƠNG TRÌNH MẪU ĐẦY ĐỦ 100\% TÍNH NĂNG}
+% =============================================================================
+
+Dưới đây là mã nguồn tích hợp toàn bộ các tính năng từ nguyên thủy đến hiện đại của ngôn ngữ Sd++:
+
+\begin{lstlisting}[language=C, caption={Chương trình mẫu Sd++ Mega Application}]
+*/ BẮT ĐẦU CHƯƠNG TRÌNH VỚI SSTA
+ssta {
+    imp*ioprt.$
+    imp*math.$
+    imp*mem.$
+    imp*str.$
+
+    \\ 
+      Ghi chú khối bọc trong hai đầu backslash.
+      Bảo vệ bộ nhớ và phân đoạn quy tắc.
+    \\
+
+    */ 1. Tạo dấu ngắt custom ¥ bằng defk (chốt bằng #)
+    defk<ids.end: text "¥"> {
+        init ids.edt ("¥" endlogic == "$"+"€"+"$$") 
+        func * end.sta * end.iid #
+    }
+
+    */ 2. Khai báo trần ngoài khung (chốt bằng ₫)
+    ids.g: sys_name = "Sd++ Core System" ₫
+    ids.g: core_temp = -20 ₫
+    ptr.g: p_temp = @core_temp ₫
+
+    */ 3. Khung Outer Frame (chốt bằng €)
+    define[
+        ids.edt: text = "main",
+        pri.edt: text = "print"
+    ]{
+        main: {
+            init ¥
+
+            iptedt.int temp = ids(core_temp).g ¥
+            iptedt.ptr p_local = @temp ¥
+
+            ids.pri: "Máy chủ: /sids(sys_name).g" ¥
+            ids.pri: "Nhiệt độ hiện tại: /dtemp °C" ¥
+
+            */ 4. Selection block tự sửa lỗi với cờ $$
+            ids sb(temp) {
+                block temp > 0:
+                    ids.pri: "Hệ thống vận hành tối ưu!" ¥
+                    transf $ $
+
+                block temp < 0:
+                    ids.pri: "Cảnh báo nhiệt âm (/dtemp)! Đang tự kích hoạt sưởi..." ¥
+                    *p_local = *p_local + 50 ¥
+                    $$ */ Cờ $$ Reback tự nhảy lùi kiểm tra lại condition
+
+                remaining:
+                    break $$
+            } ¥
+
+            */ 5. Cấp phát bộ nhớ Heap trực tiếp
+            iptedt.ptr heap_mem = sta.alloc(32) $
+            *heap_mem = 888 $
+            iptedt.int read_val = *heap_mem $
+            ids.pri: "Đọc giá trị từ Heap: /dread_val" $
+            sta.free(heap_mem) $
+
+            ref*0 $:
+        } ¥
+    } €
+}
+
+*/ KẾT THÚC TOÀN BỘ VỚI ##
+##
+\end{lstlisting}
+
+% =============================================================================
+\section{KẾT LUẬN}
+% =============================================================================
+
+Tài liệu này đóng vai trò là **Đặc tả Kỹ thuật Tối cao (Master Specification)** chính thức của hệ sinh thái ngôn ngữ **Sd** và **Sd++**. Toàn bộ cấu trúc từ ranh giới tối cao \texttt{ssta} / \texttt{\#\#}, tam hợp bất biến \texttt{sta} / \texttt{iid} / \texttt{\#}, cho đến bộ cờ ngắt phẳng đều đã hoàn chỉnh, tinh gọn và sẵn sàng cho việc triển khai bộ biên dịch Native Machine Code x86\_64.
+
+\end{document}
