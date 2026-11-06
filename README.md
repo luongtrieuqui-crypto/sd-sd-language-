@@ -2,6 +2,13 @@
 
 Welcome to the Sd/Sd++ learning repository. Choose a language for the complete learning guide:
 
+## 📚 Giáo trình / Textbooks (PDF)
+
+- 🇻🇳 **[Tải giáo trình Sd/Sd++ (PDF, tiếng Việt)](giaotrinhsd%3Asdpp.pdf)**
+- 🇬🇧 **[Download the Sd/Sd++ Programming Textbook (PDF, English)](Sd_Sdpp_Programming_Textbook_English%20(1).pdf)**
+
+## Learn Sd / Học Sd
+
 - 🇬🇧 **[Learn Sd / Sd++ in English](docs/en/README.md)**
 - 🇻🇳 **[Học Sd / Sd++ bằng tiếng Việt](docs/vi/README.md)**
 
