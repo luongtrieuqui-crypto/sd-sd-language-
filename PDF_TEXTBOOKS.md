@@ -1,4 +1,6 @@
 # Sd / Sd++ PDF textbooks
 
-- [English textbook — Sd/Sd++ Programming](Sd_Sdpp_Programming_Textbook_English%20(1).pdf)
-- [Vietnamese textbook — Giáo trình Sd/Sd++](giaotrinhsd%3Asdpp.pdf)
+## 📌 Ghim đầu tiên · Giáo trình Sd/Sd++
+
+- 📌 **[Giáo trình Sd/Sd++ (PDF, tiếng Việt)](giaotrinhsd%3Asdpp.pdf)**
+- 📌 **[Sd/Sd++ Programming Textbook (PDF, English)](Sd_Sdpp_Programming_Textbook_English%20(1).pdf)**
