@@ -1,12 +1,12 @@
 # Ví dụ mã nguồn Sd / Sd++
 
-Thư mục này gom các chương trình mẫu thành từng tệp theo ngôn ngữ để dễ mở và chỉnh sửa.
+Mỗi chương trình mẫu nằm trong tệp riêng, đặt tên theo số thứ tự và chủ đề để dễ duyệt, tìm kiếm và chỉnh sửa.
 
-## Chạy thử
+## Cách chạy
 
-Mở `Sd IDE.html` ở thư mục gốc bằng trình duyệt, rồi dùng **Mở tệp** để chọn một tệp mẫu. Chọn **Chạy** để thực thi.
+Mở `Sd IDE.html` ở thư mục gốc bằng trình duyệt, chọn **Mở tệp**, rồi mở tệp `.sd` hoặc `.sdpp` cần chạy. Chọn **Chạy** để thực thi.
 
-- `sd/`: ví dụ Sd theo cú pháp `sta(main)`, lệnh `iid:` và kết thúc lệnh bằng `ed`.
-- `sdpp/`: ví dụ Sd++ theo cú pháp khung `ssta`, kết thúc lệnh bằng `$`, và kết thúc tệp bằng `##`.
+- [`sd/`](sd/): Sd — cú pháp `sta(main)`, lệnh `iid:` và kết thúc lệnh bằng `ed`.
+- [`sdpp/`](sdpp/): Sd++ — cú pháp khung `ssta`, kết thúc lệnh bằng `$`, kết thúc tệp bằng `##`.
 
-Đây là cú pháp riêng theo bộ thông dịch trong IDE của repository, không phải cú pháp C/C++.
+Tham khảo [`docs/README.md`](../docs/README.md) để xem bản đồ toàn bộ repository. Đây là cú pháp riêng theo bộ thông dịch trong IDE, không phải cú pháp C/C++.

@@ -1,35 +1,32 @@
 # Sd / Sd++ Programming Language
 
-Sd / Sd++ is a lightweight programming language project with a browser-based IDE, educational materials, and sample source files. This repository is intended for learning, experiments, and language study.
+A learning and experimentation repository for Sd and Sd++, with a browser IDE, language references, and runnable examples.
 
-## Overview
+## Start here
 
-This repository contains:
+1. Open [`Sd IDE.html`](Sd%20IDE.html) in a modern browser.
+2. Open a sample from [`examples/`](examples/README.md), then run or debug it in the IDE.
+3. Use [`docs/README.md`](docs/README.md) as the file and documentation index, or [`CODE_GUIDE.en.md`](CODE_GUIDE.en.md) for a code-oriented overview.
 
-- `Sd IDE.html` — a browser IDE for writing, running, and debugging Sd programs.
-- `sdform.sd` and `shortsd.sd` — example Sd source files.
-- `.tex`, `.txt`, and `.pdf` documents — tutorials, reference notes, and technical materials.
-- Additional project files such as `form opencode sd` and `formopen code sd++`.
-- [`CODE_GUIDE.md`](CODE_GUIDE.md) — a practical guide to the IDE implementation and the example programs.
-- [`CODE_GUIDE.en.md`](CODE_GUIDE.en.md) — the same code guide in English.
+## Repository map
 
-## Project purpose
+```text
+.
+├── Sd IDE.html                 # Browser IDE and interpreter
+├── examples/                   # Runnable Sd / Sd++ programs, grouped by language
+│   ├── sd/
+│   └── sdpp/
+├── docs/                       # Navigation and file organization guide
+├── CODE_GUIDE.md               # Code guide (Vietnamese)
+├── CODE_GUIDE.en.md            # Code guide (English)
+├── README.md                   # Project home (English)
+└── README.vi.md                # Project home (Vietnamese)
+```
 
-The repository serves as a learning and testing environment for the Sd and Sd++ languages. It includes both practical coding examples and instructional documents.
-
-## Quick start
-
-1. Open `Sd IDE.html` in a modern browser.
-2. Load or create a `.sd` or `.sdpp` file.
-3. Run or debug the program using the built-in IDE tools.
-4. Use the included examples and code guide as references.
+The original learning/reference materials remain in the repository root to preserve existing links. Their descriptions and suggested destinations are listed in [`docs/README.md`](docs/README.md).
 
 ## Notes
 
-- Most of the documents and examples are currently written in Vietnamese.
-- The IDE interface itself is also primarily Vietnamese.
-- This README provides an English overview of the project for international readers.
-
-## Repository status
-
-The project is a research / learning repository and not yet a fully polished production package.
+- Sd and Sd++ are the project's own syntaxes; they are not C/C++.
+- Most source examples and documentation are in Vietnamese.
+- This is a learning / research project, not a production-ready language toolchain.

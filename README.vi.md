@@ -1,26 +1,32 @@
 # Ngôn ngữ lập trình Sd / Sd++
 
-Kho lưu trữ này chứa các dự án và tài liệu học tập cho ngôn ngữ lập trình Sd và Sd++.
+Kho lưu trữ học tập và thử nghiệm ngôn ngữ Sd/Sd++, gồm IDE chạy trên trình duyệt, tài liệu tham khảo và chương trình mẫu có thể chạy.
 
-## Tổng quan
+## Bắt đầu nhanh
 
-Repo bao gồm:
+1. Mở [`Sd IDE.html`](Sd%20IDE.html) bằng trình duyệt hiện đại.
+2. Mở một chương trình trong thư mục [`examples/`](examples/README.md), sau đó chạy hoặc gỡ lỗi trong IDE.
+3. Xem [`docs/README.md`](docs/README.md) để tra cứu tệp và hướng dẫn tổ chức; xem [`CODE_GUIDE.md`](CODE_GUIDE.md) để tìm hiểu mã nguồn.
 
-- `Sd IDE.html` — môi trường lập trình trên trình duyệt cho Sd 2.
-- `sdform.sd` và `shortsd.sd` — các file ví dụ mã nguồn Sd.
-- Các tài liệu `.tex`, `.txt`, `.pdf` — giáo trình, tài liệu kỹ thuật và tham khảo.
-- Các tệp bổ sung như `form opencode sd` và `formopen code sd++`.
-- [`CODE_GUIDE.md`](CODE_GUIDE.md) — giải thích cách tổ chức IDE và các ví dụ mã nguồn.
-- [Bản hướng dẫn tiếng Anh](CODE_GUIDE.en.md).
+## Sơ đồ thư mục
 
-## Mục đích
+```text
+.
+├── Sd IDE.html                 # IDE và bộ thông dịch trên trình duyệt
+├── examples/                   # Mã mẫu Sd / Sd++, chia theo ngôn ngữ
+│   ├── sd/
+│   └── sdpp/
+├── docs/                       # Mục lục tài liệu và hướng dẫn tổ chức tệp
+├── CODE_GUIDE.md               # Hướng dẫn mã nguồn (tiếng Việt)
+├── CODE_GUIDE.en.md            # Hướng dẫn mã nguồn (tiếng Anh)
+├── README.md                   # Trang giới thiệu (tiếng Anh)
+└── README.vi.md                # Trang giới thiệu (tiếng Việt)
+```
 
-Dự án tập trung vào việc học, thử nghiệm và nghiên cứu ngôn ngữ. Nó kết hợp cả ví dụ thực hành lẫn tài liệu hướng dẫn.
+Các tài liệu học tập có sẵn được giữ nguyên ở thư mục gốc để không làm hỏng liên kết cũ. [`docs/README.md`](docs/README.md) mô tả nội dung từng tệp và cách tìm chúng.
 
-## Cách sử dụng
+## Lưu ý
 
-Mở file `Sd IDE.html` trong trình duyệt, sau đó viết, chạy và gỡ lỗi chương trình Sd.
-
-## Ghi chú
-
-Phần lớn tài liệu và giao diện IDE hiện tại đang bằng tiếng Việt. File này là bản tóm tắt bằng tiếng Việt để dễ tiếp cận hơn.
+- Sd/Sd++ sử dụng cú pháp riêng của dự án, không phải C/C++.
+- Phần lớn mã mẫu và tài liệu hiện viết bằng tiếng Việt.
+- Đây là dự án học tập/nghiên cứu, chưa phải bộ công cụ production hoàn chỉnh.
