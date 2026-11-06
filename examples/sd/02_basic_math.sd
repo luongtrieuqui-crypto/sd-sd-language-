@@ -1,0 +1,8 @@
+imp*ioprt.ed
+sta(main){
+iid: sta(int a) => edt: sta(a = 12) ed
+iid: sta(int b) => edt: sta(b = 8) ed
+iid: sta(int tong) => edt: sta(tong = a + b) ed
+iid: sta(pri) "Tong hai so la:" ed
+iid: sta(pri) tong ed
+}

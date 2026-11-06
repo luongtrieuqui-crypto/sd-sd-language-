@@ -1,0 +1,12 @@
+ssta {
+define [ids.edt: text = "main"]{
+main: {
+iptedt.int chieu_dai = 9 $
+iptedt.int chieu_rong = 4 $
+iptedt.int dien_tich = chieu_dai * chieu_rong $
+ids.pri: "Dien tich hinh chu nhat:" $
+ids.pri: dien_tich $
+}
+} €
+}
+##

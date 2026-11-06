@@ -1,0 +1,4 @@
+imp*ioprt.ed
+sta(main){
+iid: sta(pri) "Xin chao tu Sd!" ed
+}

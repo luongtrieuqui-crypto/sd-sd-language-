@@ -1,0 +1,8 @@
+ssta {
+define [ids.edt: text = "main"]{
+main: {
+ids.pri: "Xin chao tu Sd++!" $
+}
+} €
+}
+##

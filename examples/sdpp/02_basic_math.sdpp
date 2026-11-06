@@ -1,0 +1,12 @@
+ssta {
+define [ids.edt: text = "main"]{
+main: {
+iptedt.int a = 12 $
+iptedt.int b = 8 $
+iptedt.int tong = a + b $
+ids.pri: "Tong hai so la:" $
+ids.pri: tong $
+}
+} €
+}
+##
