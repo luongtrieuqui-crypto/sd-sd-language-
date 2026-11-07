@@ -1,4 +1,12 @@
-# Sd / Sd++ Programming Language
+<p align="center">
+  <img src="IMG_0774.jpeg" alt="Logo gốc của ngôn ngữ lập trình SD và SD++" width="240">
+</p>
+
+<h1 align="center">Ngôn ngữ lập trình Sd / Sd++</h1>
+
+<p align="center">
+  <strong>Học Sd / Sd++ · Learn Sd / Sd++</strong>
+</p>
 
 > **Bắt đầu học ngay · Start learning now**
 >
@@ -15,6 +23,6 @@ Chào mừng bạn đến với repository học Sd/Sd++. Chọn ngôn ngữ đ�
 
 ## Bắt đầu nhanh
 
-Mở [`Sd IDE.html`](Sd%20IDE.html), chọn **Mở tệp**, rồi chọn ví dụ trong [`examples/sd/`](examples/sd/) hoặc [`examples/sdpp/`](examples/sdpp/). Nhấn **Chạy** để thực thi. Các hướng dẫn theo ngôn ngữ có lộ trình học, cú pháp nhập môn, mẹo gỡ lỗi và mục lục tài liệu tham khảo.
+Mở [`Sd IDE.html`](Sd%20IDE.html), chọn **Mở tệp**, rồi chọn ví dụ trong [`examples/sd/`](examples/sd/) hoặc [`examples/sdpp/`](examples/sdpp/). Nhấn **Chạy** để thực thi chương trình.
 
 Sd/Sd++ dùng cú pháp riêng của dự án, không phải C/C++. Mã ví dụ và tài liệu tham khảo được sắp xếp thành các tệp riêng để dễ tìm, chỉnh sửa và học tập.
