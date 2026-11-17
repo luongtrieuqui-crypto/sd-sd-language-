@@ -15,6 +15,10 @@
 > | **[📥 Giáo trình tiếng Việt v9 (PDF)](textbooks/vi/Giao_trinh_Sd_Sdpp_v9_bia.pdf?raw=1)** · [Bản tiếng Việt trước đây](textbooks/archive/giaotrinhsd%3Asdpp.pdf?raw=1) | **[📥 Open / download the English PDF](textbooks/en/Sd_Sdpp_Programming_Textbook_English%20(1).pdf?raw=1)** |
 >
 > **[▶ Mở IDE Sd/Sd++](Sd%20IDE.html)** · [Xem ví dụ Sd](examples/sd/) · [Xem ví dụ Sd++](examples/sdpp/)
+>
+> **Tải ứng dụng Android:** [![Tải Sd IDE cho Android (APK)](https://img.shields.io/badge/T%E1%BA%A3i%20APK-Android-brightgreen?style=for-the-badge)](SdIDE-debug.apk?raw=1)
+>
+> iOS, Windows, Linux và macOS: **chưa có phiên bản hỗ trợ**.
 
 Chào mừng bạn đến với repository học Sd/Sd++. Chọn ngôn ngữ để xem hướng dẫn đầy đủ:
 
